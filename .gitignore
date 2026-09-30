@@ -1,0 +1,12 @@
+# Secrets: never commit OpenSky credentials
+credentials.json
+.env
+
+# Collected data (large, regenerable)
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
