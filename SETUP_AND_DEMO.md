@@ -36,22 +36,23 @@ token is cached in the macOS keychain afterwards.
 | helper | `scripts/show_trajectory.py` | Prints one saved trajectory in time order |
 | helper | `scripts/plot_snapshot.py` | Scatter plot of the newest snapshot, colored by altitude |
 
-## Demo run sheet (60 seconds)
+## Demo run sheet (1 to 2 minutes)
 
 Before class:
 
-1. Run the historical query once (it can take minutes):
+1. Run the historical query once, so the browser login is done and cached:
    `python scripts/historical.py --start "2026-09-20 14:00" --hours 1`
-2. About 10 minutes before presenting, start the poller in its own tab:
+2. About 10 minutes before presenting, start the poller in a second terminal:
    `python scripts/poll.py --ohio --interval 30`
-3. Pre-type the commands below in separate terminal tabs. Increase the terminal font size.
+3. Increase the editor and terminal font size.
 4. Keep a screen recording of a successful run as a backup.
 
-Live:
+Live, in this order:
 
-| Time | Tab | Command |
-|---|---|---|
-| 0:00 | 1 | `python scripts/snapshot.py --ohio --save` |
-| 0:15 | 1 | `python scripts/plot_snapshot.py` |
-| 0:25 | 2 | (poller already running, point at the growing count) |
-| 0:40 | 3 | `python scripts/show_trajectory.py` |
+| Step | Terminal | Command | Takes about |
+|---|---|---|---|
+| 1 | 1 | `python scripts/snapshot.py --ohio --save` | 3 s |
+| 2 | 1 | `python scripts/plot_snapshot.py` | 2 s, then close the window |
+| 3 | 2 | (poller already running, point at the growing count) | |
+| 4 | 1 | `python scripts/historical.py --start "2026-09-20 14:00" --hours 1` | 6 s with the login cached |
+| 5 | 1 | `python scripts/show_trajectory.py` | 1 s |
