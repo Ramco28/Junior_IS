@@ -4,7 +4,6 @@ import time
 import pandas as pd
 import requests
 
-from .auth import TokenManager
 from .config import API_BASE, STATE_FIELDS
 
 
@@ -16,9 +15,11 @@ class RateLimited(Exception):
         self.retry_after_s = retry_after_s
 
 
-def fetch_states(tm: TokenManager, bbox=None) -> dict:
+def fetch_states(auth, bbox=None) -> dict:
     """Get one snapshot of every aircraft OpenSky is tracking right now.
 
+    auth is a TokenManager or AnonymousAccess (see auth.get_auth). Its
+    headers() gives the Authorization header, or nothing in anonymous mode.
     bbox is (lat_min, lat_max, lon_min, lon_max), or None for the whole world.
     A small box like Ohio costs fewer credits. I return the JSON the way it
     comes, {"time": ..., "states": [[...], ...]}, and add "credits_remaining"
@@ -28,7 +29,7 @@ def fetch_states(tm: TokenManager, bbox=None) -> dict:
     if bbox is not None:
         params = dict(zip(["lamin", "lamax", "lomin", "lomax"], bbox))
     resp = requests.get(f"{API_BASE}/states/all", params=params,
-                        headers=tm.headers(), timeout=30)
+                        headers=auth.headers(), timeout=30)
     if resp.status_code == 429:
         # OpenSky tells me how many seconds to wait before trying again
         retry = int(resp.headers.get("X-Rate-Limit-Retry-After-Seconds", 600))

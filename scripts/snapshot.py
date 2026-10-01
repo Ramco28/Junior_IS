@@ -10,7 +10,7 @@ import json
 from datetime import datetime, timezone
 
 import _path  # noqa: F401  (lets me import adsb from here)
-from adsb.auth import TokenManager
+from adsb.auth import get_auth
 from adsb.config import OHIO_BBOX, SNAPSHOT_DIR
 from adsb.live import fetch_states, states_to_frame
 
@@ -21,14 +21,14 @@ def main():
     ap.add_argument("--save", action="store_true", help="also save the snapshot to data/snapshots/")
     args = ap.parse_args()
 
-    tm = TokenManager.from_json_file()
-    # I get the token first on its own, so a login problem shows up here
-    # and not in the middle of the data request
-    print("Authenticating with OpenSky... ", end="", flush=True)
-    tm.token()
-    print("ok")
+    # get_auth asks for the token first on its own, so a login problem shows
+    # up here and not in the middle of the data request. If my credentials are
+    # missing or rejected it prints a warning and I continue without a login.
+    auth = get_auth()
+    if not auth.anonymous:
+        print("Authenticated with OpenSky (OAuth2 token ok)")
 
-    snap = fetch_states(tm, bbox=OHIO_BBOX if args.ohio else None)
+    snap = fetch_states(auth, bbox=OHIO_BBOX if args.ohio else None)
     df = states_to_frame(snap)
     when = datetime.fromtimestamp(snap["time"], timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 

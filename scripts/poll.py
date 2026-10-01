@@ -11,6 +11,8 @@ Stop it with Ctrl+C.
 Credits: my OpenSky account gets a daily budget of API credits, and asking for
 the whole world costs more than a small area. Polling Ohio is cheap, polling
 the world every 30 s is not, so I print the credits left after each request.
+Without working credentials the script runs in anonymous mode (400 credits per
+day and not 4,000), and the default interval goes from 60 s to 300 s.
 """
 import argparse
 import gzip
@@ -21,7 +23,7 @@ from datetime import datetime, timezone
 import requests
 
 import _path  # noqa: F401  (lets me import adsb from here)
-from adsb.auth import TokenManager
+from adsb.auth import get_auth
 from adsb.config import OHIO_BBOX, SNAPSHOT_DIR
 from adsb.live import RateLimited, fetch_states
 
@@ -37,13 +39,19 @@ def save(snap: dict):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--interval", type=int, default=60, help="seconds between requests (default 60)")
+    ap.add_argument("--interval", type=int, default=None,
+                    help="seconds between requests (default 60, or 300 in anonymous mode)")
     ap.add_argument("--count", type=int, default=0, help="stop after this many snapshots (0 = run forever)")
     ap.add_argument("--ohio", action="store_true", help="limit to the Ohio bounding box")
     args = ap.parse_args()
 
     SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
-    tm = TokenManager.from_json_file()  # one TokenManager for the whole run, it renews the token by itself
+    # one login for the whole run: a TokenManager renews the token by itself,
+    # and if my credentials do not work I get anonymous access instead
+    tm = get_auth()
+    if args.interval is None:
+        # anonymous users only get 400 credits per day, so I poll less often
+        args.interval = 300 if tm.anonymous else 60
     bbox = OHIO_BBOX if args.ohio else None
     last_time = None
     saved = 0

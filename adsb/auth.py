@@ -18,6 +18,7 @@ class TokenManager:
     """Keeps one token and gets a new one when it is about to expire."""
 
     REFRESH_MARGIN_S = 30  # get a new token 30 s early so a request never uses an expired one
+    anonymous = False  # the scripts check this to know which mode they are in
 
     def __init__(self, client_id: str, client_secret: str):
         self.client_id = client_id
@@ -60,3 +61,37 @@ class TokenManager:
     def headers(self) -> dict:
         # the API expects the header "Authorization: Bearer <token>"
         return {"Authorization": f"Bearer {self.token()}"}
+
+
+class AnonymousAccess:
+    """Stands in for TokenManager when I have no working credentials.
+
+    OpenSky still answers /states/all without a login, but with only 400
+    credits per day (4,000 when logged in). It has the same headers() method
+    as TokenManager, so the rest of the code does not care which one it gets.
+    """
+
+    anonymous = True
+
+    def headers(self) -> dict:
+        return {}  # no Authorization header at all
+
+
+def get_auth(path: Path = CREDENTIALS_FILE):
+    """Return a TokenManager if my credentials work, otherwise AnonymousAccess.
+
+    I ask for a token right away, so I find out here whether OpenSky accepts
+    my id and secret. If the file is missing or the token request is refused,
+    I print one warning line and continue without a login. A network error is
+    not caught, because without a connection anonymous access fails too.
+    """
+    try:
+        tm = TokenManager.from_json_file(path)
+        tm.token()
+        return tm
+    except (FileNotFoundError, ValueError):
+        reason = "credentials.json is missing or incomplete"
+    except requests.HTTPError as e:
+        reason = f"OpenSky rejected my credentials (HTTP {e.response.status_code})"
+    print(f"Warning: {reason}, using anonymous access (400 credits per day).")
+    return AnonymousAccess()

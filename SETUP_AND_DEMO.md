@@ -17,6 +17,11 @@ Live API credentials: log in to opensky-network.org, open the Account page,
 create an API client, and download `credentials.json` into the repo root.
 It is listed in `.gitignore`, so it will never be committed.
 
+Anonymous fallback: if `credentials.json` is missing or OpenSky rejects it,
+`snapshot.py` and `poll.py` print one warning line and keep going without a
+login. Anonymous access gets 400 credits per day (4,000 when logged in), so
+`poll.py` then waits 300 s between requests by default (60 s when logged in).
+
 Historical database: `scripts/historical.py` logs in as `ramco_28`. The first
 run opens a browser window for OpenSky login (same as the Trino CLI), and the
 token is cached in the macOS keychain afterwards.
