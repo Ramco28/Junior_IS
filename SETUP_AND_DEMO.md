@@ -3,11 +3,18 @@
 ## Setup (once)
 
 ```bash
+brew install python@3.12
 cd ~/Projects/Junior_IS
-python3 -m venv .venv
+/opt/homebrew/bin/python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+The virtual environment uses the native (Apple Silicon) Python from Homebrew,
+not Anaconda. My Anaconda was an Intel build and stopped running after I
+updated macOS, which broke the old environment. If the Trino login cannot be
+saved after rebuilding the environment, delete the old
+`trino.opensky-network.org@ramco_28` entry in Keychain Access and log in again.
 
 I keep the repo in `~/Projects` and not on the Desktop, because my Desktop syncs
 to iCloud and macOS moves files to the cloud when the disk is low, which made
