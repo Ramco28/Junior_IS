@@ -15,6 +15,7 @@ GitHub issue. The stretch goals listed at the end will be tackled if time permit
 | 3 | [Query historical DB, save labeled trajectories](https://github.com/Ramco28/Junior_IS/issues/3) | 09/24 | 4h | Source data for ML training/testing | Done |
 | 4 | [Parse raw state vector into normalized record](https://github.com/Ramco28/Junior_IS/issues/4) | 09/24 | 2h | ICAO, callsign, lat/lon, altitude, speed, timestamp | Not started |
 | 5 | [Compute derived per-aircraft features](https://github.com/Ramco28/Junior_IS/issues/5) | 09/24 | 5h | Altitude/speed change rate, distance between positions | Not started |
+| 18 | [Enrich aircraft type from the OpenSky aircraft database](https://github.com/Ramco28/Junior_IS/issues/18) | 10/01 | 2h | Type and manufacturer by icao24, so rule thresholds can differ by aircraft type | Not started |
 | 6 | [Rule-based anomaly checks (speed, duplicate ICAO, altitude/speed change, route deviation)](https://github.com/Ramco28/Junior_IS/issues/6) | 10/01 | 14h | Four configurable-threshold checks | Not started |
 | 7 | [Label historical dataset via weak labeling](https://github.com/Ramco28/Junior_IS/issues/7) | 10/01 | 4h | Uses rule-based checks as initial labels | Not started |
 | 8 | [Train baseline ML model](https://github.com/Ramco28/Junior_IS/issues/8) | 10/22 | 8h | e.g. isolation forest or autoencoder | Not started |
