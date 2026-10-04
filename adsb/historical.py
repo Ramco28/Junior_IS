@@ -6,8 +6,13 @@ import pandas as pd
 from .config import TRINO_CATALOG, TRINO_HOST, TRINO_PORT, TRINO_SCHEMA, TRINO_USER
 
 # the columns of state_vectors_data4 that I need
+# The table has one row per aircraft per second, and it repeats the last known
+# position until a new one arrives. lastposupdate is the time the position was
+# really received, so I need it to know which rows are a new position and
+# which rows are just a repeat of an old one.
 COLUMNS = ["time", "icao24", "callsign", "lat", "lon", "velocity", "heading",
-           "vertrate", "baroaltitude", "geoaltitude", "onground", "squawk"]
+           "vertrate", "baroaltitude", "geoaltitude", "onground", "squawk",
+           "lastposupdate"]
 
 
 def connect():
