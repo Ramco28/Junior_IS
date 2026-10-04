@@ -22,7 +22,7 @@ def historical_frame():
 
 
 def test_live_and_historical_have_identical_columns():
-    live = normalize_live({"states": [live_row(t=1000), live_row(t=1010)]})
+    live = normalize_live({"time": 1012, "states": [live_row(t=1000), live_row(t=1010)]})
     hist = normalize_historical(historical_frame())
     assert list(live.columns) == NORMALIZED_COLUMNS
     assert list(hist.columns) == NORMALIZED_COLUMNS
@@ -33,7 +33,7 @@ def test_live_and_historical_have_identical_columns():
 def test_implausible_value_is_kept():
     # 2000 m/s is about six times the speed of sound: impossible for an
     # aircraft, and exactly what a detector must see
-    df = normalize_live({"states": [live_row(velocity=2000.0)]})
+    df = normalize_live({"time": 1002, "states": [live_row(velocity=2000.0)]})
     assert len(df) == 1
     assert df["velocity_mps"].iloc[0] == 2000.0
 
@@ -45,7 +45,7 @@ def test_rows_without_position_and_duplicates_are_dropped():
         live_row(t=1010, lat=None),       # no position
         live_row(icao24="ABC999", t=1000),
     ]
-    df = normalize_live({"states": states})
+    df = normalize_live({"time": 1012, "states": states})
     assert len(df) == 2
     assert set(df["icao24"]) == {"abc123", "abc999"}  # lowercase
 
@@ -55,3 +55,13 @@ def test_historical_uses_position_time():
     assert list(df["time"]) == [1000, 1010]  # lastposupdate 999.6 and 1009.7, rounded
     assert df["category"].isna().all()       # the historical table has no category
     assert df["callsign"].iloc[0] == "TEST1"
+
+
+def test_batch_time_is_the_delivery_time():
+    # live: the snapshot time, not the position time
+    live = normalize_live({"time": 1003, "states": [live_row(t=1000)]})
+    assert list(live["time"]) == [1000]
+    assert list(live["batch_time"]) == [1003]
+    # historical: the table's row time from before lastposupdate replaced it
+    hist = normalize_historical(historical_frame())
+    assert list(hist["batch_time"]) == [1000, 1010]

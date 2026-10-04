@@ -17,6 +17,8 @@ from .live import states_to_frame
 # them (meters, meters per second, degrees), I do not convert anything.
 NORMALIZED_COLUMNS = [
     "time",               # Unix seconds when the POSITION was received (int)
+    "batch_time",         # Unix seconds of the delivery this row came in: the
+                          # snapshot time (live) or the table's row time (historical)
     "icao24",             # aircraft address, lowercase hex
     "callsign",           # stripped, missing if empty
     "lat",                # degrees
@@ -79,6 +81,7 @@ def _finish(df: pd.DataFrame, source: str) -> pd.DataFrame:
 
     # 2. same types in both sources
     df["time"] = df["time"].round().astype("int64")
+    df["batch_time"] = df["batch_time"].astype("int64")
     df["icao24"] = df["icao24"].str.lower()
     df[FLOAT_COLUMNS] = df[FLOAT_COLUMNS].astype("float64")
     df["on_ground"] = df["on_ground"].astype(bool)
@@ -97,34 +100,50 @@ def _finish(df: pd.DataFrame, source: str) -> pd.DataFrame:
     return df[NORMALIZED_COLUMNS].reset_index(drop=True)
 
 
+def _live_frame(snapshot: dict) -> pd.DataFrame:
+    """One raw snapshot as a table with the normalized column names (not cleaned yet)."""
+    df = states_to_frame(snapshot).rename(columns=LIVE_RENAME)
+    # every row of a snapshot was delivered together, so they share one batch
+    # time. I keep it because a problem in one delivery (for example positions
+    # that are older than their timestamps) hits all its rows at once.
+    df["batch_time"] = snapshot["time"]
+    return df
+
+
 def normalize_live(snapshot: dict) -> pd.DataFrame:
     """Normalize one raw /states/all snapshot (the dict fetch_states returns).
 
     For the time I use time_position, the moment the position was received,
     and not the snapshot time. An aircraft can appear in a snapshot with a
-    position that is several minutes old.
+    position that is several minutes old. The snapshot time is kept
+    separately as batch_time.
     """
-    df = states_to_frame(snapshot).rename(columns=LIVE_RENAME)
-    return _finish(df, "live")
+    return _finish(_live_frame(snapshot), "live")
 
 
 def load_snapshots(folder=SNAPSHOT_DIR) -> pd.DataFrame:
     """Load every stored snapshot in a folder and normalize them as one table."""
-    rows = []
+    frames = []
     # the file names are UTC times, so sorted() gives them in time order
     for path in sorted(folder.glob("states_*.json.gz")):
         with gzip.open(path, "rt") as f:
-            rows.extend(json.load(f)["states"])
-    # all the aircraft rows together look like one very large snapshot
-    return normalize_live({"states": rows})
+            frames.append(_live_frame(json.load(f)))
+    if not frames:
+        return normalize_live({"time": 0, "states": []})  # empty table, right columns
+    # stack the snapshots on top of each other, oldest first, then clean once
+    return _finish(pd.concat(frames, ignore_index=True), "live")
 
 
 def normalize_historical(df: pd.DataFrame) -> pd.DataFrame:
     """Normalize rows from state_vectors_data4 (straight from Trino or from my Parquet file)."""
     df = df.sort_values("time")  # so "keep the first" below means the earliest row
+    # the table's own row time says which batch of rows this one belongs to
+    df = df.rename(columns={"time": "batch_time"})
     if "lastposupdate" in df.columns:
         # the table repeats the last position every second, so the row time is
         # not the position time. lastposupdate is, and it becomes my time.
-        df = df.drop(columns="time").rename(columns={"lastposupdate": "time"})
+        df = df.rename(columns={"lastposupdate": "time"})
+    else:
+        df["time"] = df["batch_time"]  # older files without lastposupdate
     df = df.drop(columns="trajectory_id", errors="ignore")  # recomputed after cleaning
     return _finish(df.rename(columns=HISTORICAL_RENAME), "historical")
