@@ -40,6 +40,7 @@ token is cached in the macOS keychain afterwards.
 | #1 | `scripts/snapshot.py` | Authenticates (OAuth2) and prints one live snapshot |
 | #2 | `scripts/poll.py` | Polls on a schedule, stores each raw snapshot as `.json.gz` |
 | #3 | `scripts/historical.py` | Queries `state_vectors_data4` over Ohio, splits flights into trajectories, saves Parquet |
+| #4, #5 | `scripts/build_features.py` | Normalizes live or historical data into one format, computes per-aircraft features, saves Parquet in `data/features/` |
 | helper | `scripts/show_trajectory.py` | Prints one saved trajectory in time order |
 | helper | `scripts/plot_snapshot.py` | Scatter plot of the newest snapshot, colored by altitude |
 
