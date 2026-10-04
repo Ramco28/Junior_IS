@@ -25,9 +25,11 @@ def fetch_states(auth, bbox=None) -> dict:
     comes, {"time": ..., "states": [[...], ...]}, and add "credits_remaining"
     when OpenSky sends it.
     """
-    params = {}
+    # extended=1 asks OpenSky to add the aircraft category (light airplane,
+    # rotorcraft, ...) as an 18th field. Without it the category is left out.
+    params = {"extended": 1}
     if bbox is not None:
-        params = dict(zip(["lamin", "lamax", "lomin", "lomax"], bbox))
+        params.update(zip(["lamin", "lamax", "lomin", "lomax"], bbox))
     resp = requests.get(f"{API_BASE}/states/all", params=params,
                         headers=auth.headers(), timeout=30)
     if resp.status_code == 429:

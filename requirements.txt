@@ -3,3 +3,4 @@ pandas>=2.1
 pyarrow>=14
 matplotlib>=3.8
 trino[external-authentication-token-cache]>=0.330
+pytest>=8
