@@ -101,6 +101,15 @@ UNTRUSTED_CLASS_SOURCES = ["callsign", "mismatch"]
 # Limits that are the same for every aircraft.
 CHECK_DT_RANGE_S = (5, 60)        # speed and change checks only use reports 5 to 60 s apart:
                                   # shorter gaps suffer from 1 s time rounding, longer ones hide turns
+# Between two reports I only know the straight line from one position to the
+# next. An aircraft that turns in between flies along a curve, and a curve is
+# always LONGER than the straight line between its ends. So in a turn the
+# implied speed (straight line / time) comes out LOWER than the real speed:
+# for a half circle the straight line is only 64% of the path. A turn can
+# never make the implied speed too HIGH. That is why, when the heading changed
+# by more than this many degrees, I ignore a negative speed mismatch (implied
+# below reported) but still check a positive one.
+TURN_GUARD_DEG = 45.0
 IMPOSSIBLE_SPEED_MPS = 1000.0     # 1,944 kt, about Mach 3: faster than any aircraft that carries ADS-B
 MIN_JUMP_M = 5_000.0              # 2.7 NM: a jump must be at least this far, so time rounding cannot cause it
 MIN_JUMPS_FOR_DUPLICATE = 3       # A, B, A, B is three jumps: away, back, and away again
@@ -256,7 +265,8 @@ def _bearing_rad(lat1, lon1, lat2, lon2):
 # ---------------------------------------------------------------------------
 
 def check_speed(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
-                dt_range_s: tuple = CHECK_DT_RANGE_S) -> pd.DataFrame:
+                dt_range_s: tuple = CHECK_DT_RANGE_S,
+                turn_guard_deg: float = TURN_GUARD_DEG) -> pd.DataFrame:
     """Speed check: is the aircraft faster than its kind can fly, or does its
     reported speed disagree with how far it actually moved?
 
@@ -268,6 +278,11 @@ def check_speed(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
                        that is not part of an alternating A, B, A, B pattern
     The first three only use reports 5 to 60 s apart. A position jump is
     impossible at any time gap, so it is not limited to that window.
+
+    speed_mismatch has one exception: if the aircraft turned by more than
+    turn_guard_deg between the two reports, an implied speed BELOW the
+    reported speed is expected (see TURN_GUARD_DEG) and is not flagged. An
+    implied speed ABOVE the reported speed is still flagged, turn or not.
     """
     df = _prepare(df, thresholds)
     is_jump, alternating = _find_jumps(df)
@@ -275,10 +290,13 @@ def check_speed(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     normal = _in_dt_window(df, dt_range_s) & ~is_jump
     max_speed = _limit(df, "max_speed_mps", thresholds)
     max_mismatch = _limit(df, "max_speed_mismatch_mps", thresholds)
+    # how much the heading changed between the previous report and this one
+    heading_change = (df["turn_rate_dps"] * df["dt_s"]).abs()
+    explained_by_turn = (heading_change > turn_guard_deg) & (df["speed_mismatch_mps"] < 0)
     return pd.concat([
         _flags(df, normal & (df["velocity_mps"] > max_speed), "speed_reported", df["velocity_mps"], max_speed),
         _flags(df, normal & (df["implied_speed_mps"] > max_speed), "speed_implied", df["implied_speed_mps"], max_speed),
-        _flags(df, normal & (df["speed_mismatch_mps"].abs() > max_mismatch), "speed_mismatch",
+        _flags(df, normal & ~explained_by_turn & (df["speed_mismatch_mps"].abs() > max_mismatch), "speed_mismatch",
                df["speed_mismatch_mps"], max_mismatch),
         _flags(df, is_jump & ~alternating, "position_jump", df["implied_speed_mps"], IMPOSSIBLE_SPEED_MPS),
     ], ignore_index=True)

@@ -267,3 +267,27 @@ def test_class_mismatch_is_judged_with_unknown_limits_and_not_flagged_for_speed(
     # a normal helicopter keeps its class and its limits
     normal = mark_class_mismatches(flight(cls="rotorcraft", speed=50.0))
     assert set(normal["aircraft_class_source"]) == {"database"}
+
+
+def turning(speed, reported_speed, turn_deg=90.0):
+    # the same flight as flight(), but the heading changes by turn_deg at every report
+    df = flight(cls="jet", speed=speed, reported_speed=reported_speed)
+    df["heading_deg"] = [(turn_deg * i) % 360 for i in range(len(df))]
+    return recompute(df)
+
+
+def test_turn_explains_a_negative_speed_mismatch_but_not_a_positive_one():
+    # implied 100 m/s, reported 250 m/s: mismatch -150. In a 90 degree turn the
+    # straight line is shorter than the curved path, so this is expected.
+    assert check_speed(turning(speed=100.0, reported_speed=250.0)).empty
+    # the same numbers with no turn are a real mismatch
+    assert checks_in(check_speed(flight(cls="jet", speed=100.0, reported_speed=250.0))) == {"speed_mismatch"}
+    # implied 250 m/s, reported 100 m/s: mismatch +150. No turn can make the
+    # straight line LONGER than the path, so this is flagged even while turning.
+    flags = check_speed(turning(speed=250.0, reported_speed=100.0))
+    assert checks_in(flags) == {"speed_mismatch"}
+    assert (flags["value"] > 0).all()
+    # a gentle 20 degree turn is under the 45 degree guard: the negative mismatch is flagged
+    assert checks_in(check_speed(turning(speed=100.0, reported_speed=250.0, turn_deg=20.0))) == {"speed_mismatch"}
+    # the guard is configurable
+    assert check_speed(turning(speed=100.0, reported_speed=250.0, turn_deg=20.0), turn_guard_deg=10.0).empty
