@@ -16,7 +16,7 @@ GitHub issue. The stretch goals listed at the end will be tackled if time permit
 | 4 | [Parse raw state vector into normalized record](https://github.com/Ramco28/Junior_IS/issues/4) | 09/24 | 2h | ICAO, callsign, lat/lon, altitude, speed, timestamp | Done |
 | 5 | [Compute derived per-aircraft features](https://github.com/Ramco28/Junior_IS/issues/5) | 09/24 | 5h | Altitude/speed change rate, distance between positions | Done |
 | 18 | [Enrich aircraft type from the OpenSky aircraft database](https://github.com/Ramco28/Junior_IS/issues/18) | 10/01 | 2h | Type and manufacturer by icao24, so rule thresholds can differ by aircraft type | Done |
-| 6 | [Rule-based anomaly checks (speed, duplicate ICAO, altitude/speed change, route deviation)](https://github.com/Ramco28/Junior_IS/issues/6) | 10/01 | 14h | Four configurable-threshold checks | In progress |
+| 6 | [Rule-based anomaly checks (speed, duplicate ICAO, altitude/speed change, route deviation)](https://github.com/Ramco28/Junior_IS/issues/6) | 10/01 | 14h | Four configurable-threshold checks | Done |
 | 7 | [Label historical dataset via weak labeling](https://github.com/Ramco28/Junior_IS/issues/7) | 10/01 | 4h | Uses rule-based checks as initial labels | Not started |
 | 8 | [Train baseline ML model](https://github.com/Ramco28/Junior_IS/issues/8) | 10/22 | 8h | e.g. isolation forest or autoencoder | Not started |
 | 9 | [Evaluate ML model vs. rule-based detector](https://github.com/Ramco28/Junior_IS/issues/9) | 10/22 | 4h | Agreement/disagreement statistics on held-out data | Not started |
@@ -57,6 +57,7 @@ Main command for each finished feature:
 | 3 | `python scripts/historical.py --start "2026-09-20 14:00" --hours 1` | Queries one hour of past flights over Ohio and saves them as trajectories |
 | 4, 5 | `python scripts/build_features.py --live` | Puts the stored snapshots in the normalized format and computes the per-aircraft features (use `--historical <file>` for a historical file) |
 | 18 | `python scripts/download_aircraft_db.py` | Downloads the OpenSky aircraft database once (about 110 MB), used to tell small airplanes, helicopters and jets apart |
+| 6 | `python scripts/run_rules.py --live` | Runs the rule-based checks (speed, duplicate ICAO, altitude and speed change, route deviation) on a feature file and saves the flags |
 
 Folders:
 

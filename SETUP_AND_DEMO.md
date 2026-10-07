@@ -42,6 +42,7 @@ token is cached in the macOS keychain afterwards.
 | #3 | `scripts/historical.py` | Queries `state_vectors_data4` over Ohio, splits flights into trajectories, saves Parquet |
 | #4, #5 | `scripts/build_features.py` | Normalizes live or historical data into one format, computes per-aircraft features, saves Parquet in `data/features/` |
 | #18 | `scripts/download_aircraft_db.py` | Downloads the OpenSky aircraft database once into `data/aircraft/`, so each `icao24` gets a class: light, rotorcraft, jet or unknown |
+| #6 | `scripts/run_rules.py` | Runs the rule-based anomaly checks on a feature file, saves the flags in `data/flags/`, prints flags per check and aircraft class |
 | helper | `scripts/show_trajectory.py` | Prints one saved trajectory in time order |
 | helper | `scripts/plot_snapshot.py` | Scatter plot of the newest snapshot, colored by altitude |
 
