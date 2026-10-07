@@ -18,7 +18,7 @@ from adsb.aircraft import add_aircraft_class, load_aircraft_db
 from adsb.config import FEATURES_DIR
 from adsb.features import add_features
 from adsb.normalize import load_snapshots, normalize_historical
-from adsb.rules import mark_artifacts
+from adsb.rules import mark_artifacts, mark_class_mismatches
 
 
 def main():
@@ -43,6 +43,8 @@ def main():
     df = add_features(df)
     # 3. mark the rows that came in a delivery I cannot trust
     df = mark_artifacts(df)
+    # 4. mark the aircraft that do not fly like their registered class
+    df = mark_class_mismatches(df)
 
     FEATURES_DIR.mkdir(parents=True, exist_ok=True)
     path = FEATURES_DIR / name

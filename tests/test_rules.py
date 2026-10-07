@@ -6,7 +6,8 @@ from adsb.features import add_features
 from adsb.normalize import normalize_live
 from adsb.rules import (FLAG_COLUMNS, check_changes, check_duplicate_icao,
                         check_route_deviation, check_speed, find_artifact_batches,
-                        find_class_mismatches, mark_artifacts, run_all_checks)
+                        find_class_mismatches, mark_artifacts, mark_class_mismatches,
+                        run_all_checks)
 
 SPEED = 200.0                    # every fake aircraft flies north at 200 m/s
 DEG_PER_S = SPEED / 111_195      # degrees of latitude covered in one second
@@ -110,6 +111,20 @@ def flight(icao24="abc123", cls="jet", source="database", n=12, step_s=10,
     return add_features(df)
 
 
+def with_burst(cls, cruise, burst, n=12, burst_rows=(5, 6, 7)):
+    """A flight at `cruise` m/s that flies at `burst` m/s for a few reports.
+
+    Both its positions and its reported speed show the burst. Most of the
+    flight is normal, so the aircraft still looks like its class overall.
+    """
+    df = flight(cls=cls, speed=cruise, n=n)
+    speeds = [burst if i in burst_rows else cruise for i in range(n)]
+    moved_m = np.cumsum([0.0] + [v * 10 for v in speeds[1:]])  # 10 s between reports
+    df["velocity_mps"] = speeds
+    df["lat"] = 40.0 + moved_m / M_PER_DEG
+    return recompute(df)
+
+
 def checks_in(flags):
     return set(flags["check"])
 
@@ -122,16 +137,20 @@ def test_normal_flights_get_no_flags():
 
 
 def test_flags_table_has_the_shared_format():
-    flags = run_all_checks(flight(cls="light", speed=250.0))
+    flags = run_all_checks(with_burst("light", cruise=60.0, burst=250.0))
     assert list(flags.columns) == FLAG_COLUMNS
     assert set(flags["detector"]) == {"rules"}
 
 
 def test_speed_light_aircraft_at_jet_speed_is_flagged():
-    # 250 m/s (486 kt) is normal for a jet and impossible for a light aircraft
-    flags = check_speed(flight(cls="light", speed=250.0))
+    # a light aircraft cruising at 60 m/s (117 kt) that shows 250 m/s (486 kt)
+    # for three reports: normal for a jet, impossible for a light aircraft
+    flags = check_speed(with_burst("light", cruise=60.0, burst=250.0))
     assert checks_in(flags) == {"speed_reported", "speed_implied"}
     assert set(flags["threshold"]) == {200.0}
+    assert len(flags) == 6  # three reports, flagged by both checks
+    # the same burst is fine for a jet
+    assert check_speed(with_burst("jet", cruise=200.0, burst=250.0)).empty
 
 
 def test_speed_mismatch_is_flagged():
@@ -216,7 +235,7 @@ def test_route_is_not_judged_for_low_jets_or_short_flights():
 
 
 def test_only_step_based_flags_can_be_artifacts():
-    df = flight(cls="light", speed=250.0)
+    df = with_burst("light", cruise=60.0, burst=250.0)
     df["batch_artifact"] = True  # pretend every batch is unreliable
     flags = run_all_checks(df)
     by_check = flags.groupby("check")["is_artifact"].all()
@@ -232,3 +251,19 @@ def test_class_mismatch_lists_a_helicopter_at_jet_speed():
     # a real helicopter speed is not listed, and neither is a class that is only a guess
     assert find_class_mismatches(flight(cls="rotorcraft", speed=50.0)).empty
     assert find_class_mismatches(flight(cls="light", source="callsign", speed=250.0)).empty
+
+
+def test_class_mismatch_is_judged_with_unknown_limits_and_not_flagged_for_speed():
+    # the "helicopter" at 217 m/s: the database is wrong about it, the aircraft is not too fast
+    df = flight(icao24="c06b2c", cls="rotorcraft", speed=217.0)
+    assert run_all_checks(df).empty
+    marked = mark_class_mismatches(df)
+    assert set(marked["aircraft_class_source"]) == {"mismatch"}
+    assert set(marked["aircraft_class"]) == {"rotorcraft"}       # the registered class is kept
+    assert list(find_class_mismatches(marked)["icao24"]) == ["c06b2c"]  # still listed after marking
+    # even with the unknown limits, something truly impossible is still flagged
+    too_fast = run_all_checks(flight(icao24="c06b2c", cls="rotorcraft", speed=450.0))
+    assert "speed_reported" in checks_in(too_fast)
+    # a normal helicopter keeps its class and its limits
+    normal = mark_class_mismatches(flight(cls="rotorcraft", speed=50.0))
+    assert set(normal["aircraft_class_source"]) == {"database"}
