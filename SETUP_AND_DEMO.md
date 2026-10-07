@@ -50,19 +50,24 @@ token is cached in the macOS keychain afterwards.
 
 Before class:
 
-1. Run the historical query once, so the browser login is done and cached:
+1. Once per machine, download the aircraft database (about 110 MB, takes about a minute):
+   `python scripts/download_aircraft_db.py`
+2. Run the historical query once, so the browser login is cached and the file for step c exists:
    `python scripts/historical.py --start "2026-09-20 14:00" --hours 1`
-2. About 10 minutes before presenting, start the poller in a second terminal:
+3. About 10 minutes before presenting, start the poller in a second terminal:
    `python scripts/poll.py --ohio --interval 30`
-3. Increase the editor and terminal font size.
-4. Keep a screen recording of a successful run as a backup.
+4. Increase the editor and terminal font size.
+5. Keep a screen recording of a successful run as a backup.
 
 Live, in this order:
 
 | Step | Terminal | Command | Takes about |
 |---|---|---|---|
-| 1 | 1 | `python scripts/snapshot.py --ohio --save` | 3 s |
-| 2 | 1 | `python scripts/plot_snapshot.py` | 2 s, then close the window |
-| 3 | 2 | (poller already running, point at the growing count) | |
-| 4 | 1 | `python scripts/historical.py --start "2026-09-20 14:00" --hours 1` | 6 s with the login cached |
-| 5 | 1 | `python scripts/show_trajectory.py` | 1 s |
+| a | 1 | `python scripts/snapshot.py --ohio --save` | 2 s |
+| b | 2 | (poller already running, point at the growing count) | |
+| c | 1 | `python scripts/build_features.py --historical data/historical/trajectories_ohio_20260920T1400_1h.parquet` | 1 s |
+| d | 1 | `python scripts/run_rules.py --historical data/features/features_ohio_20260920T1400_1h.parquet` | 1 s |
+
+Step c normalizes the historical hour, adds the aircraft class and computes the
+features. Step d runs the rule-based checks on the file step c saved, so c must
+run before d.
