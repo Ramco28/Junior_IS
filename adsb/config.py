@@ -20,6 +20,14 @@ TRINO_CATALOG = "minio"
 TRINO_SCHEMA = "osky"
 TRINO_USER = "ramco_28"
 
+# Aircraft metadata: OpenSky's public aircraft database (who is behind an icao24)
+# and the ICAO list of aircraft types. I download both once into data/aircraft/.
+AIRCRAFT_DIR = DATA_DIR / "aircraft"
+AIRCRAFT_DB_FILE = AIRCRAFT_DIR / "aircraft_db.parquet"  # my slim copy, fast to load
+METADATA_URL = "https://s3.opensky-network.org/data-samples/metadata"
+AIRCRAFT_DB_CSV = "aircraft-database-complete-2025-08.csv"  # newest file OpenSky publishes
+AIRCRAFT_TYPES_CSV = "doc8643AircraftTypes.csv"
+
 # /states/all sends each aircraft as a plain list with no names, so I keep the
 # field names here in the same order as the OpenSky docs to label the columns
 STATE_FIELDS = [
