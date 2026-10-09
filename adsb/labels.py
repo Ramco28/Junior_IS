@@ -22,6 +22,14 @@ says the flight is off its route. So:
   - route_deviation and duplicate_icao are columns of the TRAJECTORY table.
 Feature 9 must then compare like with like: a report-level model against the
 row labels, a trajectory-level model against the trajectory labels.
+
+EVALUATE PER FLIGHT. The flagged reports are not spread evenly: a few flights
+hold a large share of them (one flight can have 60 flagged reports, most have
+one or two). If feature 9 counted reports, its scores would mostly describe
+those few flights, and a detector could look good by getting one flight right.
+So feature 9 should count FLIGHTS: a flight counts once, as found or missed,
+however many of its reports are flagged. The trajectory table has what this
+needs (flagged_rows says how many reports of the flight are labeled anomaly).
 """
 import pandas as pd
 
