@@ -16,9 +16,14 @@ import _path  # noqa: F401  (lets me import adsb from here)
 from adsb.config import HISTORICAL_DIR, OHIO_BBOX
 from adsb.historical import fetch_state_vectors, parse_utc, split_trajectories
 
-# Every third day over one month: two Tuesdays and one of every other weekday.
+# Two days out of every three over about three weeks: 16 days, with every
+# weekday at least twice. I started with the first row (every third day) and
+# added the second row later, because 8 days gave too few anomalous flights
+# to hold out a validation set and a test set.
 DAYS = ["2026-09-15", "2026-09-18", "2026-09-21", "2026-09-24",
-        "2026-09-27", "2026-09-30", "2026-10-03", "2026-10-06"]
+        "2026-09-27", "2026-09-30", "2026-10-03", "2026-10-06",
+        "2026-09-16", "2026-09-19", "2026-09-22", "2026-09-25",
+        "2026-09-28", "2026-10-01", "2026-10-04", "2026-10-07"]
 
 # Start hours in UTC. Ohio is 4 hours behind UTC in summer.
 HOURS = [
@@ -45,7 +50,7 @@ def main():
             continue
         try:
             df = fetch_state_vectors(start, start + timedelta(hours=1), OHIO_BBOX, SAMPLE_S)
-        except Exception as e:  # one failed query should not stop the other 31
+        except Exception as e:  # one failed query should not stop the others
             print(f"{label}: FAILED ({e})")
             failed.append(start)
             continue
