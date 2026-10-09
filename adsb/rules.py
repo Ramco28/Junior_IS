@@ -219,6 +219,22 @@ def _in_dt_window(df: pd.DataFrame, dt_range_s: tuple) -> pd.Series:
     return df["dt_s"].between(*dt_range_s)
 
 
+def _airborne_step(df: pd.DataFrame) -> pd.Series:
+    """True where this report AND the one before it were sent in the air.
+
+    On the ground the reported speed cannot be trusted. After landing an
+    aircraft keeps sending its position, but the speed field often stays
+    frozen at the last value it had in the air (for example 113 kt while the
+    aircraft is parked). Its positions then say "not moving" and its speed
+    says "113 kt", which looks like a huge speed mismatch but is only a stale
+    value. The speed and change checks compare two reports, so both must be
+    airborne. Needs the table sorted by trajectory and time (see _prepare).
+    """
+    # the first report of a trajectory has no previous one: count it as "on the ground"
+    previous_on_ground = df.groupby("trajectory_id")["on_ground"].shift(fill_value=True)
+    return ~df["on_ground"] & ~previous_on_ground
+
+
 def _find_jumps(df: pd.DataFrame):
     """Find impossible position jumps, and tell single jumps from alternating tracks.
 
@@ -276,8 +292,9 @@ def check_speed(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
       speed_mismatch   implied and reported speed differ by more than the limit
       position_jump    one impossible jump (more than Mach 3 over more than 5 km)
                        that is not part of an alternating A, B, A, B pattern
-    The first three only use reports 5 to 60 s apart. A position jump is
-    impossible at any time gap, so it is not limited to that window.
+    The first three only use reports 5 to 60 s apart, and only steps where
+    the aircraft was airborne at both ends (see _airborne_step). A position
+    jump is impossible at any time gap, so it is not limited to that window.
 
     speed_mismatch has one exception: if the aircraft turned by more than
     turn_guard_deg between the two reports, an implied speed BELOW the
@@ -287,7 +304,7 @@ def check_speed(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     df = _prepare(df, thresholds)
     is_jump, alternating = _find_jumps(df)
     # a jump row is reported once, as a jump, and not again as "too fast"
-    normal = _in_dt_window(df, dt_range_s) & ~is_jump
+    normal = _in_dt_window(df, dt_range_s) & ~is_jump & _airborne_step(df)
     max_speed = _limit(df, "max_speed_mps", thresholds)
     max_mismatch = _limit(df, "max_speed_mismatch_mps", thresholds)
     # how much the heading changed between the previous report and this one
@@ -325,12 +342,14 @@ def check_changes(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     Two check names:
       climb_rate     change in barometric altitude per second (up or down)
       acceleration   change in reported speed per second (up or down)
-    Only reports 5 to 60 s apart are used. Jump rows are left out: they
-    compare two positions that do not belong together, so their rates mean nothing.
+    Only reports 5 to 60 s apart are used, and only steps where the aircraft
+    was airborne at both ends (see _airborne_step). Jump rows are left out:
+    they compare two positions that do not belong together, so their rates
+    mean nothing.
     """
     df = _prepare(df, thresholds)
     is_jump, _ = _find_jumps(df)
-    normal = _in_dt_window(df, dt_range_s) & ~is_jump
+    normal = _in_dt_window(df, dt_range_s) & ~is_jump & _airborne_step(df)
     max_alt_rate = _limit(df, "max_alt_rate_mps", thresholds)
     max_accel = _limit(df, "max_accel_mps2", thresholds)
     return pd.concat([

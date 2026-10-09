@@ -269,6 +269,20 @@ def test_class_mismatch_is_judged_with_unknown_limits_and_not_flagged_for_speed(
     assert set(normal["aircraft_class_source"]) == {"database"}
 
 
+def test_reports_on_the_ground_are_not_checked_for_speed_or_changes():
+    # a landed aircraft: it does not move, but its speed field is frozen at 58 m/s (113 kt)
+    parked = flight(cls="jet", speed=0.0, reported_speed=58.0)
+    parked["on_ground"] = True
+    assert run_all_checks(parked).empty
+    # the same numbers in the air are a real speed mismatch
+    assert checks_in(check_speed(flight(cls="jet", speed=0.0, reported_speed=58.0))) == {"speed_mismatch"}
+    # a step that starts on the ground is not checked either: only the first
+    # three reports are on the ground here, so the 4th report is skipped
+    rolling = flight(cls="jet", speed=0.0, reported_speed=58.0)
+    rolling["on_ground"] = [True] * 3 + [False] * 9
+    assert len(check_speed(rolling)) == 8
+
+
 def turning(speed, reported_speed, turn_deg=90.0):
     # the same flight as flight(), but the heading changes by turn_deg at every report
     df = flight(cls="jet", speed=speed, reported_speed=reported_speed)
