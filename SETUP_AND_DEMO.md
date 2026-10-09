@@ -43,7 +43,8 @@ token is cached in the macOS keychain afterwards.
 | #4, #5 | `scripts/build_features.py` | Normalizes live or historical data into one format, computes per-aircraft features, saves Parquet in `data/features/` |
 | #18 | `scripts/download_aircraft_db.py` | Downloads the OpenSky aircraft database once into `data/aircraft/`, so each `icao24` gets a class: light, rotorcraft, jet or unknown |
 | #6 | `scripts/run_rules.py` | Runs the rule-based anomaly checks on a feature file, saves the flags in `data/flags/`, prints flags per check and aircraft class |
-| #7 | `scripts/collect_dataset.py` | Downloads 32 one-hour windows (8 days, 4 times of day) from the historical database |
+| #7 | `scripts/collect_dataset.py` | Downloads 64 one-hour windows (16 days, 4 times of day) from the historical database |
+| #6, #7 | `scripts/mark_mismatches.py` | Decides over all historical hours which aircraft do not fly like their registered class, and writes it into every feature file |
 | #7 | `scripts/label_dataset.py` | Labels all historical reports and trajectories from the rule flags, splits by day, saves to `data/labeled/` |
 | helper | `scripts/show_trajectory.py` | Prints one saved trajectory in time order |
 | helper | `scripts/plot_snapshot.py` | Scatter plot of the newest snapshot, colored by altitude |
@@ -52,10 +53,13 @@ token is cached in the macOS keychain afterwards.
 
 ```bash
 python scripts/download_aircraft_db.py     # once
-python scripts/collect_dataset.py          # 32 queries, about 5 minutes, browser login
+python scripts/collect_dataset.py          # 64 queries, about 10 minutes, browser login
 for f in data/historical/trajectories_ohio_*.parquet; do
     python scripts/build_features.py --historical "$f"
-    python scripts/run_rules.py --historical "data/features/$(basename "$f" | sed 's/trajectories_/features_/')"
+done
+python scripts/mark_mismatches.py          # one class mismatch decision per aircraft, over all hours
+for f in data/features/features_ohio_*.parquet; do
+    python scripts/run_rules.py --historical "$f"
 done
 python scripts/label_dataset.py
 ```
