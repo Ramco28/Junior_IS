@@ -44,6 +44,12 @@ THRESHOLDS = {
         "max_route_deviation_m": 50_000.0,
         # 0 means: judge the route at any altitude.
         "route_min_altitude_m": 0.0,
+        # Ceiling of the class, used to spot aircraft that are not what the
+        # database says (find_class_mismatches). Piston aircraft stay below
+        # about 25,000 ft, turboprops in the light class top out around
+        # 31,000 ft (TBM, PC-12), and a King Air 350 at 35,000 ft. So nothing
+        # in this class cruises above 10,973 m (36,000 ft).
+        "max_altitude_m": 10_973.0,
     },
     "rotorcraft": {
         # Fast helicopters cruise near 80 m/s (155 kt); with a 30 m/s (58 kt)
@@ -55,6 +61,9 @@ THRESHOLDS = {
         "max_accel_mps2": 5.0,
         "max_route_deviation_m": 50_000.0,   # 27 NM, they do not fly airways
         "route_min_altitude_m": 0.0,         # any altitude
+        # The highest helicopter ceilings are near 20,000 to 25,000 ft, and
+        # most stay far below: 7,620 m is 25,000 ft.
+        "max_altitude_m": 7_620.0,
     },
     "jet": {
         # Airliners cruise up to Mach 0.9, about 270 m/s (525 kt) true
@@ -76,6 +85,7 @@ THRESHOLDS = {
         # trajectory are judged. Below that they are arriving or departing,
         # and controllers bend their paths to line them up for an airport.
         "route_min_altitude_m": 6_000.0,
+        "max_altitude_m": float("inf"),      # no ceiling: jets are the highest class I have
     },
     # When I do not know the kind of aircraft I use the loosest limit of each
     # row above, so that I never flag an aircraft only because I could not
@@ -87,6 +97,7 @@ THRESHOLDS = {
         "max_accel_mps2": 5.0,               # 9.7 kt per second
         "max_route_deviation_m": 50_000.0,   # 27 NM (light)
         "route_min_altitude_m": 0.0,         # any altitude
+        "max_altitude_m": float("inf"),      # no ceiling
     },
 }
 
@@ -428,10 +439,14 @@ def find_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
     """Find aircraft that do not behave like the class they are registered as.
 
     Example: an icao24 that the aircraft database lists as a small helicopter
-    but that cruises at 217 m/s (422 kt). One fast report could be a glitch,
-    so I look at the aircraft's TYPICAL speed: if the median of its reported
-    airborne speeds is above the limit of its registered class, the aircraft
-    is not what the database says.
+    but that cruises at 217 m/s (422 kt) at 43,000 ft. One odd report could be
+    a glitch, so I look at how the aircraft TYPICALLY flies. It is a mismatch
+    if either of these is true:
+      speed     the median of its reported airborne speeds is above the speed
+                limit of its registered class (max_speed_mps)
+      altitude  it spends real time above the ceiling of its registered class
+                (max_altitude_m). I use the 95th percentile of its altitudes
+                and not the maximum, so one wrong altitude value is not enough.
 
     The usual reason is an outdated database entry. In the United States the
     ICAO address is computed from the N-number, so the address follows the
@@ -443,8 +458,8 @@ def find_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
     already marked "mismatch"), because the other sources are guesses.
 
     Returns one row per aircraft: icao24, callsign, aircraft_class (the
-    registered one), median_speed_mps, max_speed_mps (the limit of that
-    class), median_altitude_m, reports.
+    registered one), reason, median_speed_mps, max_speed_mps, high_altitude_m
+    (the 95th percentile), max_altitude_m, median_altitude_m, reports.
     """
     rows = df[df["aircraft_class_source"].isin(["database", "mismatch"]) & ~df["on_ground"]]
     per_aircraft = rows.groupby("icao24").agg(
@@ -452,11 +467,17 @@ def find_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
         aircraft_class=("aircraft_class", "first"),
         median_speed_mps=("velocity_mps", "median"),
         median_altitude_m=("baro_altitude_m", "median"),
+        high_altitude_m=("baro_altitude_m", lambda alt: alt.quantile(0.95)),
         reports=("time", "size"),
     ).reset_index()
-    per_aircraft["max_speed_mps"] = per_aircraft["aircraft_class"].map(
-        {c: limits["max_speed_mps"] for c, limits in thresholds.items()})
-    out = per_aircraft[per_aircraft["median_speed_mps"] > per_aircraft["max_speed_mps"]]
+    for name in ("max_speed_mps", "max_altitude_m"):
+        per_aircraft[name] = per_aircraft["aircraft_class"].map(
+            {c: limits[name] for c, limits in thresholds.items()})
+    too_fast = per_aircraft["median_speed_mps"] > per_aircraft["max_speed_mps"]
+    too_high = per_aircraft["high_altitude_m"] > per_aircraft["max_altitude_m"]
+    per_aircraft["reason"] = np.select([too_fast & too_high, too_fast, too_high],
+                                       ["speed and altitude", "speed", "altitude"], default="")
+    out = per_aircraft[too_fast | too_high]
     return out.sort_values("median_speed_mps", ascending=False).reset_index(drop=True)
 
 

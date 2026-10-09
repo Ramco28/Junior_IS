@@ -193,8 +193,8 @@ def test_climb_rate_is_flagged():
     # 10 m/s (about 1,970 ft/min) is a normal airliner climb
     assert check_changes(flight(cls="jet", climb=10.0)).empty
     # 20 m/s (3,940 ft/min) is fine for a light turboprop, 30 m/s (5,900 ft/min) is not
-    assert check_changes(flight(cls="light", speed=80.0, climb=20.0)).empty
-    assert checks_in(check_changes(flight(cls="light", speed=80.0, climb=30.0))) == {"climb_rate"}
+    assert check_changes(flight(cls="light", speed=80.0, climb=20.0, altitude=1000.0)).empty
+    assert checks_in(check_changes(flight(cls="light", speed=80.0, climb=30.0, altitude=1000.0))) == {"climb_rate"}
 
 
 def test_acceleration_is_flagged():
@@ -249,7 +249,7 @@ def test_class_mismatch_lists_a_helicopter_at_jet_speed():
     assert list(odd["icao24"]) == ["c06b2c"]
     assert odd["max_speed_mps"].iloc[0] == 110.0
     # a real helicopter speed is not listed, and neither is a class that is only a guess
-    assert find_class_mismatches(flight(cls="rotorcraft", speed=50.0)).empty
+    assert find_class_mismatches(flight(cls="rotorcraft", speed=50.0, altitude=500.0)).empty
     assert find_class_mismatches(flight(cls="light", source="callsign", speed=250.0)).empty
 
 
@@ -265,8 +265,22 @@ def test_class_mismatch_is_judged_with_unknown_limits_and_not_flagged_for_speed(
     too_fast = run_all_checks(flight(icao24="c06b2c", cls="rotorcraft", speed=450.0))
     assert "speed_reported" in checks_in(too_fast)
     # a normal helicopter keeps its class and its limits
-    normal = mark_class_mismatches(flight(cls="rotorcraft", speed=50.0))
+    normal = mark_class_mismatches(flight(cls="rotorcraft", speed=50.0, altitude=500.0))
     assert set(normal["aircraft_class_source"]) == {"database"}
+
+
+def test_class_mismatch_by_altitude():
+    # a "light" aircraft cruising at 12,000 m (39,400 ft), above the ceiling of
+    # its class, at a speed (150 m/s, 292 kt) that alone would not give it away
+    odd = find_class_mismatches(flight(cls="light", speed=150.0, altitude=12000.0))
+    assert list(odd["reason"]) == ["altitude"]
+    # the same aircraft at 9,000 m (29,500 ft) is a normal fast turboprop
+    assert find_class_mismatches(flight(cls="light", speed=150.0, altitude=9000.0)).empty
+    # too fast and too high at the same time
+    both = find_class_mismatches(flight(cls="rotorcraft", speed=217.0, altitude=13000.0))
+    assert list(both["reason"]) == ["speed and altitude"]
+    # jets have no ceiling
+    assert find_class_mismatches(flight(cls="jet", speed=250.0, altitude=13000.0)).empty
 
 
 def test_reports_on_the_ground_are_not_checked_for_speed_or_changes():

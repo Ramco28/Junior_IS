@@ -69,9 +69,9 @@ def main():
     if not odd.empty:
         odd = odd.assign(median_kt=(odd["median_speed_mps"] * KT_PER_MPS).round(),
                          class_limit_kt=(odd["max_speed_mps"] * KT_PER_MPS).round(),
-                         median_alt_ft=(odd["median_altitude_m"] * FT_PER_M).round(-2))
-        print(odd[["icao24", "callsign", "aircraft_class", "median_kt", "class_limit_kt",
-                   "median_alt_ft", "reports"]].to_string(index=False))
+                         high_alt_ft=(odd["high_altitude_m"] * FT_PER_M).round(-2))
+        print(odd[["icao24", "callsign", "aircraft_class", "reason", "median_kt", "class_limit_kt",
+                   "high_alt_ft", "reports"]].to_string(index=False))
 
     if not anomalies.empty:
         # the 10 aircraft with the most flags, and which checks they triggered
