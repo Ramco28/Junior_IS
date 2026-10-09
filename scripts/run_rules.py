@@ -16,7 +16,7 @@ import pandas as pd
 
 import _path  # noqa: F401  (lets me import adsb from here)
 from adsb.config import FEATURES_DIR, FLAGS_DIR
-from adsb.rules import find_class_mismatches, run_all_checks
+from adsb.rules import list_marked_mismatches, run_all_checks
 
 KT_PER_MPS = 1.944   # knots in one m/s
 FT_PER_M = 3.281     # feet in one meter
@@ -63,8 +63,10 @@ def main():
         print("\nData artifacts per check:")
         print(artifacts["check"].value_counts().to_string())
 
-    # a separate finding: the aircraft is not what the database says it is
-    odd = find_class_mismatches(df)
+    # a separate finding: the aircraft is not what the database says it is.
+    # The decision was made when the features were built (and, for the
+    # historical dataset, by scripts/mark_mismatches.py over all the hours).
+    odd = list_marked_mismatches(df)
     print(f"\nAircraft that do not behave like their registered class: {len(odd)}")
     if not odd.empty:
         odd = odd.assign(median_kt=(odd["median_speed_mps"] * KT_PER_MPS).round(),

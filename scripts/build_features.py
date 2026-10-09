@@ -43,7 +43,10 @@ def main():
     df = add_features(df)
     # 3. mark the rows that came in a delivery I cannot trust
     df = mark_artifacts(df)
-    # 4. mark the aircraft that do not fly like their registered class
+    # 4. mark the aircraft that do not fly like their registered class. This
+    #    only sees the reports in this one table. For the historical dataset
+    #    (one file per hour), run scripts/mark_mismatches.py afterwards: it
+    #    decides again with all the hours together and overwrites this.
     df = mark_class_mismatches(df)
 
     FEATURES_DIR.mkdir(parents=True, exist_ok=True)

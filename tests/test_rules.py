@@ -6,8 +6,8 @@ from adsb.features import add_features
 from adsb.normalize import normalize_live
 from adsb.rules import (FLAG_COLUMNS, check_changes, check_duplicate_icao,
                         check_route_deviation, check_speed, find_artifact_batches,
-                        find_class_mismatches, mark_artifacts, mark_class_mismatches,
-                        run_all_checks)
+                        apply_class_mismatches, find_class_mismatches, mark_artifacts,
+                        mark_class_mismatches, run_all_checks)
 
 SPEED = 200.0                    # every fake aircraft flies north at 200 m/s
 DEG_PER_S = SPEED / 111_195      # degrees of latitude covered in one second
@@ -256,13 +256,15 @@ def test_class_mismatch_lists_a_helicopter_at_jet_speed():
 def test_class_mismatch_is_judged_with_unknown_limits_and_not_flagged_for_speed():
     # the "helicopter" at 217 m/s: the database is wrong about it, the aircraft is not too fast
     df = flight(icao24="c06b2c", cls="rotorcraft", speed=217.0)
-    assert run_all_checks(df).empty
     marked = mark_class_mismatches(df)
     assert set(marked["aircraft_class_source"]) == {"mismatch"}
     assert set(marked["aircraft_class"]) == {"rotorcraft"}       # the registered class is kept
+    assert run_all_checks(marked).empty
     assert list(find_class_mismatches(marked)["icao24"]) == ["c06b2c"]  # still listed after marking
+    # the checks do not mark by themselves: unmarked, every report is "too fast"
+    assert "speed_reported" in checks_in(run_all_checks(df))
     # even with the unknown limits, something truly impossible is still flagged
-    too_fast = run_all_checks(flight(icao24="c06b2c", cls="rotorcraft", speed=450.0))
+    too_fast = run_all_checks(mark_class_mismatches(flight(icao24="c06b2c", cls="rotorcraft", speed=450.0)))
     assert "speed_reported" in checks_in(too_fast)
     # a normal helicopter keeps its class and its limits
     normal = mark_class_mismatches(flight(cls="rotorcraft", speed=50.0, altitude=500.0))
@@ -281,6 +283,28 @@ def test_class_mismatch_by_altitude():
     assert list(both["reason"]) == ["speed and altitude"]
     # jets have no ceiling
     assert find_class_mismatches(flight(cls="jet", speed=250.0, altitude=13000.0)).empty
+
+
+def test_class_mismatch_is_one_decision_over_all_the_data():
+    # the same aircraft in two one-hour files: climbing slowly in the first
+    # (30 reports at 150 m/s), cruising fast in the second (60 reports at 230 m/s)
+    climbing = flight(icao24="a2d960", cls="light", speed=150.0, n=30)
+    cruising = flight(icao24="a2d960", cls="light", speed=230.0, n=60, start_time=90000)
+    # judged alone, the first hour looks normal: this is how it was missed
+    assert find_class_mismatches(climbing).empty
+    assert not find_class_mismatches(cruising).empty
+    # judged over both hours together it is a mismatch ...
+    listed = find_class_mismatches(pd.concat([climbing, cruising]))["icao24"]
+    assert list(listed) == ["a2d960"]
+    # ... and the decision is written into BOTH files
+    for hour in (climbing, cruising):
+        assert set(apply_class_mismatches(hour, listed)["aircraft_class_source"]) == {"mismatch"}
+    # an older mark that the full data does not confirm is removed again
+    old_mark = cruising.assign(aircraft_class_source="mismatch")
+    assert set(apply_class_mismatches(old_mark, [])["aircraft_class_source"]) == {"database"}
+    # sources that are not from the database are never touched
+    guess = flight(cls="light", source="callsign")
+    assert set(apply_class_mismatches(guess, ["abc123"])["aircraft_class_source"]) == {"callsign"}
 
 
 def test_reports_on_the_ground_are_not_checked_for_speed_or_changes():

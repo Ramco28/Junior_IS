@@ -194,12 +194,15 @@ def mark_artifacts(df: pd.DataFrame, **thresholds) -> pd.DataFrame:
 # Helpers shared by the aircraft checks
 # ---------------------------------------------------------------------------
 
-def _prepare(df: pd.DataFrame, thresholds: dict = None) -> pd.DataFrame:
-    """Sort the table and make sure it has the columns the checks need."""
+def _prepare(df: pd.DataFrame) -> pd.DataFrame:
+    """Sort the table and make sure it has the columns the checks need.
+
+    Class mismatches are NOT decided here. That needs every report I have of
+    an aircraft, and a check only sees the table it is given (often one hour).
+    See mark_class_mismatches and scripts/mark_mismatches.py.
+    """
     if "batch_artifact" not in df.columns:
         df = mark_artifacts(df)
-    # safe to do again on a table that is already marked: nothing changes
-    df = mark_class_mismatches(df, thresholds or THRESHOLDS)
     return df.sort_values(["trajectory_id", "time"]).reset_index(drop=True)
 
 
@@ -312,7 +315,7 @@ def check_speed(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     reported speed is expected (see TURN_GUARD_DEG) and is not flagged. An
     implied speed ABOVE the reported speed is still flagged, turn or not.
     """
-    df = _prepare(df, thresholds)
+    df = _prepare(df)
     is_jump, alternating = _find_jumps(df)
     # a jump row is reported once, as a jump, and not again as "too fast"
     normal = _in_dt_window(df, dt_range_s) & ~is_jump & _airborne_step(df)
@@ -358,7 +361,7 @@ def check_changes(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     they compare two positions that do not belong together, so their rates
     mean nothing.
     """
-    df = _prepare(df, thresholds)
+    df = _prepare(df)
     is_jump, _ = _find_jumps(df)
     normal = _in_dt_window(df, dt_range_s) & ~is_jump & _airborne_step(df)
     max_alt_rate = _limit(df, "max_alt_rate_mps", thresholds)
@@ -390,7 +393,7 @@ def check_route_deviation(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     departures do not fly straight. Trajectories with an impossible jump are
     left out too, since their positions cannot be trusted.
     """
-    df = _prepare(df, thresholds)
+    df = _prepare(df)
     is_jump, _ = _find_jumps(df)
     g = df.groupby("trajectory_id")
     # first and last point of each trajectory, repeated on every one of its rows
@@ -425,7 +428,7 @@ def run_all_checks(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd.DataFr
     from an unreliable batch are kept, with is_artifact set to True, so I can
     count them separately from real aircraft anomalies.
     """
-    df = _prepare(df, thresholds)
+    df = _prepare(df)
     flags = pd.concat([
         check_speed(df, thresholds),
         check_duplicate_icao(df),
@@ -454,6 +457,13 @@ def find_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
     aircraft, the address goes with it, and an old database entry for that
     address now points at a different aircraft.
 
+    Give this function ALL the reports you have of each aircraft. I first ran
+    it on one hour at a time and it missed aircraft: in a single hour an
+    aircraft can be climbing or descending the whole time, so its median speed
+    in that hour is below the limit even though over the whole dataset it is
+    clearly too fast. One aircraft was a mismatch in one file and "normal" in
+    another, and got speed flags in the second.
+
     Only classes that come from the database are checked (also the ones
     already marked "mismatch"), because the other sources are guesses.
 
@@ -461,7 +471,23 @@ def find_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
     registered one), reason, median_speed_mps, max_speed_mps, high_altitude_m
     (the 95th percentile), max_altitude_m, median_altitude_m, reports.
     """
-    rows = df[df["aircraft_class_source"].isin(["database", "mismatch"]) & ~df["on_ground"]]
+    summary = _aircraft_summary(df[df["aircraft_class_source"].isin(["database", "mismatch"])], thresholds)
+    return summary[summary["reason"] != ""].reset_index(drop=True)
+
+
+def list_marked_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd.DataFrame:
+    """The aircraft that are MARKED as mismatches in df, with their numbers in df.
+
+    Same columns as find_class_mismatches. The difference: this does not
+    decide anything, it reports a decision that was already made (maybe on
+    more data than df holds). reason is "" when df alone would not show it.
+    """
+    return _aircraft_summary(df[df["aircraft_class_source"] == "mismatch"], thresholds)
+
+
+def _aircraft_summary(rows: pd.DataFrame, thresholds: dict) -> pd.DataFrame:
+    """Typical speed and altitude of each aircraft, compared with its class limits."""
+    rows = rows[~rows["on_ground"]]
     per_aircraft = rows.groupby("icao24").agg(
         callsign=("callsign", "first"),
         aircraft_class=("aircraft_class", "first"),
@@ -477,12 +503,15 @@ def find_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
     too_high = per_aircraft["high_altitude_m"] > per_aircraft["max_altitude_m"]
     per_aircraft["reason"] = np.select([too_fast & too_high, too_fast, too_high],
                                        ["speed and altitude", "speed", "altitude"], default="")
-    out = per_aircraft[too_fast | too_high]
-    return out.sort_values("median_speed_mps", ascending=False).reset_index(drop=True)
+    return per_aircraft.sort_values("median_speed_mps", ascending=False).reset_index(drop=True)
 
 
-def mark_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd.DataFrame:
-    """Set aircraft_class_source to "mismatch" for the aircraft find_class_mismatches lists.
+def apply_class_mismatches(df: pd.DataFrame, mismatched_icao24) -> pd.DataFrame:
+    """Write a mismatch decision into a table: one decision per aircraft.
+
+    Aircraft in mismatched_icao24 that have a database class get the source
+    "mismatch". Aircraft marked "mismatch" earlier that are NOT in the list go
+    back to "database", so an older decision made on less data does not stay.
 
     The registered class stays in aircraft_class so I can still report it, but
     the checks then judge the aircraft with the unknown limits (see
@@ -491,6 +520,20 @@ def mark_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
     finding is one fact about the aircraft (the database is wrong about it),
     so it is reported once, in its own list, and not as hundreds of speed flags.
     """
-    mismatched = find_class_mismatches(df, thresholds)["icao24"]
-    source = df["aircraft_class_source"].where(~df["icao24"].isin(mismatched), "mismatch")
+    from_database = df["aircraft_class_source"].isin(["database", "mismatch"])
+    listed = df["icao24"].isin(list(mismatched_icao24))
+    source = df["aircraft_class_source"].copy()
+    source[from_database & listed] = "mismatch"
+    source[from_database & ~listed] = "database"
     return df.assign(aircraft_class_source=source)
+
+
+def mark_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd.DataFrame:
+    """Find the class mismatches in df and mark them, in one step.
+
+    Use this when df holds everything I know about its aircraft (all the live
+    snapshots, for example). For the historical dataset, which is stored as
+    one file per hour, scripts/mark_mismatches.py makes the decision over all
+    the files together.
+    """
+    return apply_class_mismatches(df, find_class_mismatches(df, thresholds)["icao24"])
