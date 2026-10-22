@@ -39,10 +39,14 @@ REPORT_LEVEL_CHECKS = ["speed_reported", "speed_implied", "speed_mismatch",
 # checks that judge a whole trajectory: columns of the trajectory table only
 TRAJECTORY_LEVEL_CHECKS = ["route_deviation", "duplicate_icao"]
 
-# Whole days held out from training (see add_split). The validation day is for
-# tuning the model, the test days are only used once, for the final numbers.
-VALIDATION_DAYS = ["2026-09-30"]
-TEST_DAYS = ["2026-10-03", "2026-10-06"]
+# Whole days held out from training (see add_split). The validation days are
+# for tuning the model, the test days are only used once, for the final numbers.
+# They are the last 5 of my 17 days, so the model is never trained on days that
+# come after the ones it is judged on. Each set mixes weekdays and a weekend
+# day, and each holds more than 60 anomalous flights (at least 30 was my goal),
+# so the evaluation does not rest on a handful of flights.
+VALIDATION_DAYS = ["2026-10-01", "2026-10-03"]       # Thursday, Saturday
+TEST_DAYS = ["2026-10-04", "2026-10-06", "2026-10-07"]  # Sunday, Tuesday, Wednesday
 
 
 def label_rows(features: pd.DataFrame, flags: pd.DataFrame) -> pd.DataFrame:

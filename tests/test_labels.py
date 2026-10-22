@@ -86,10 +86,12 @@ def test_same_aircraft_on_two_days_gets_two_different_ids():
 
 
 def test_split_never_puts_a_trajectory_or_a_day_in_two_sets():
-    windows = ["20260915T0200", "20260915T1200", "20260930T1200", "20261003T1700", "20261006T2200"]
+    windows = ["20260915T0200", "20260915T1200", "20260930T1200", "20261001T1200",
+               "20261003T1700", "20261004T0200", "20261006T2200", "20261007T1700"]
     rows = add_split(pd.concat([label_window(features(), flags(), w) for w in windows]))
     assert (rows.groupby("trajectory_id")["split"].nunique() == 1).all()
     assert (rows.groupby("day")["split"].nunique() == 1).all()
     by_day = rows.drop_duplicates("day").set_index("day")["split"].to_dict()
-    assert by_day == {"2026-09-15": "train", "2026-09-30": "validation",
-                      "2026-10-03": "test", "2026-10-06": "test"}
+    assert by_day == {"2026-09-15": "train", "2026-09-30": "train",
+                      "2026-10-01": "validation", "2026-10-03": "validation",
+                      "2026-10-04": "test", "2026-10-06": "test", "2026-10-07": "test"}
