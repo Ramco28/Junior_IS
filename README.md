@@ -18,9 +18,9 @@ GitHub issue. The stretch goals listed at the end will be tackled if time permit
 | 18 | [Enrich aircraft type from the OpenSky aircraft database](https://github.com/Ramco28/Junior_IS/issues/18) | 10/01 | 2h | Type and manufacturer by icao24, so rule thresholds can differ by aircraft type | Done |
 | 6 | [Rule-based anomaly checks (speed, duplicate ICAO, altitude/speed change, route deviation)](https://github.com/Ramco28/Junior_IS/issues/6) | 10/01 | 14h | Four configurable-threshold checks | Done |
 | 7 | [Label historical dataset via weak labeling](https://github.com/Ramco28/Junior_IS/issues/7) | 10/01 | 4h | Uses rule-based checks as initial labels | Done |
-| 8 | [Train baseline ML model](https://github.com/Ramco28/Junior_IS/issues/8) | 10/22 | 8h | e.g. isolation forest or autoencoder | Not started |
-| 9 | [Evaluate ML model vs. rule-based detector](https://github.com/Ramco28/Junior_IS/issues/9) | 10/22 | 4h | Agreement/disagreement statistics on held-out data | Not started |
-| 10 | [Build backend service running both detectors](https://github.com/Ramco28/Junior_IS/issues/10) | 10/22 | 8h | Shared output format for live data | Not started |
+| 8 | [Train baseline ML model](https://github.com/Ramco28/Junior_IS/issues/8) | 10/22 | 8h | e.g. isolation forest or autoencoder | In progress |
+| 9 | [Evaluate ML model vs. rule-based detector](https://github.com/Ramco28/Junior_IS/issues/9) | 10/22 | 4h | Agreement/disagreement statistics on held-out data | In progress |
+| 10 | [Build backend service running both detectors](https://github.com/Ramco28/Junior_IS/issues/10) | 10/22 | 8h | Shared output format for live data | In progress |
 | 11 | [Live map view](https://github.com/Ramco28/Junior_IS/issues/11) | 10/29 | 6h | Displays currently tracked aircraft | Not started |
 | 12 | [Highlight flagged aircraft on map](https://github.com/Ramco28/Junior_IS/issues/12) | 10/29 | 2h | Distinct styling from unflagged aircraft | Not started |
 | 13 | [Side panel of flagged aircraft](https://github.com/Ramco28/Junior_IS/issues/13) | 10/29 | 4h | Anomaly type, score, detector source | Not started |
