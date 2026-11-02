@@ -48,6 +48,7 @@ token is cached in the macOS keychain afterwards.
 | #7 | `scripts/label_dataset.py` | Labels all historical reports and trajectories from the rule flags, splits by day, saves to `data/labeled/` |
 | #8 | `scripts/train_model.py` | Isolation forest: trained on the training days, threshold and tree count chosen on the validation days, saves the model in `data/models/` and its flags in `data/flags/iforest_flags.parquet` |
 | #9 | `scripts/compare_detectors.py` | Per-flight comparison of the forest and the rules on the test days; writes `data/report/comparison.json` and `data/report/disagreements.csv` (with an empty `my_verdict` column) |
+| #9 helper | `scripts/plot_disagreements.py` | One picture per disagreeing flight in `data/report/disagreements/`, to fill in `my_verdict` and `my_note` by hand |
 | helper | `scripts/show_trajectory.py` | Prints one saved trajectory in time order |
 | helper | `scripts/plot_snapshot.py` | Scatter plot of the newest snapshot, colored by altitude |
 

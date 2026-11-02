@@ -29,8 +29,11 @@ DISAGREEMENT_COLUMNS = (
      "flagged_by", "rule_checks", "max_score", "score_rank", "scorable_reports",
      "report_time_utc", "lat", "lon"]
     + FEATURES
-    + ["my_verdict"]
+    + ["my_verdict", "my_note"]
 )
+
+# the two columns I fill in by hand: if either has text, the file must not be overwritten
+MANUAL_COLUMNS = ["my_verdict", "my_note"]
 
 
 def flight_table(trajectories: pd.DataFrame, scores: pd.DataFrame, threshold: float,
@@ -138,8 +141,9 @@ def disagreements(flights: pd.DataFrame, rows: pd.DataFrame) -> pd.DataFrame:
     rows are the scored reports of the split with their score and the model
     inputs (model.model_rows plus the score). For each flight I show its most
     anomalous report according to the forest (its highest score): when and
-    where it was, and the seven values the forest saw. my_verdict stays empty;
-    I fill it in myself with: genuine anomaly, equipment fault, or false alarm.
+    where it was, and the seven values the forest saw. my_verdict and my_note
+    stay empty: I fill them in myself (genuine anomaly, equipment fault, or
+    false alarm, and one short reason).
     """
     scored = flights[flights["scored"]]
     forest = scored["forest_flagged"].astype(bool)
@@ -155,4 +159,18 @@ def disagreements(flights: pd.DataFrame, rows: pd.DataFrame) -> pd.DataFrame:
     odd["report_time_utc"] = pd.to_datetime(odd["trajectory_id"].map(top["time"]), unit="s") \
         .dt.strftime("%Y-%m-%d %H:%M:%S")
     odd["my_verdict"] = ""
+    odd["my_note"] = ""
     return odd.sort_values(["flagged_by", "score_rank"])[DISAGREEMENT_COLUMNS].reset_index(drop=True)
+
+
+def has_manual_work(path) -> bool:
+    """True if a disagreements file already has something I wrote by hand.
+
+    Rerunning the comparison must never erase my verdicts, so the script
+    checks this before writing and stops instead.
+    """
+    if not path.exists():
+        return False
+    existing = pd.read_csv(path, dtype=str, keep_default_na=False)
+    present = [c for c in MANUAL_COLUMNS if c in existing.columns]
+    return bool((existing[present].apply(lambda col: col.str.strip()) != "").any().any())

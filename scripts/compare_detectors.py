@@ -7,8 +7,10 @@ trajectories of feature 7, and retrains nothing. It prints the per-flight
 comparison and writes to data/report/:
     comparison.json      every number printed here
     flights_test.parquet one row per test flight with both detectors' answers
-    disagreements.csv    the flights only one detector flags, with an empty
-                         my_verdict column for my manual inspection
+    disagreements.csv    the flights only one detector flags, with empty
+                         my_verdict and my_note columns for my manual inspection
+If disagreements.csv already has a verdict or a note in it, the script stops
+before writing anything, so my manual work is never overwritten.
 The comparison is against my rules' weak labels, not against ground truth.
 """
 import json
@@ -16,7 +18,8 @@ import json
 import pandas as pd
 
 import _path  # noqa: F401  (lets me import adsb from here)
-from adsb.compare import SPLIT, agreement, by_length, confusion, disagreements, flight_table, per_class
+from adsb.compare import (SPLIT, agreement, by_length, confusion, disagreements, flight_table,
+                          has_manual_work, per_class)
 from adsb.config import LABELED_DIR, MODELS_DIR, REPORT_DIR
 from adsb.model import model_rows
 
@@ -32,6 +35,10 @@ def pct(x):
 
 
 def main():
+    csv_path = REPORT_DIR / "disagreements.csv"
+    if has_manual_work(csv_path):
+        raise SystemExit(f"STOPPED: {csv_path} already has my_verdict or my_note filled in. "
+                         "Move or rename it first if you really want a new one.")
     settings = json.loads((MODELS_DIR / "iforest_settings.json").read_text())
     threshold = settings["threshold"]
     scores = pd.read_parquet(MODELS_DIR / "iforest_scores.parquet")
@@ -52,7 +59,7 @@ def main():
     odd = disagreements(flights, rows)
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-    odd.to_csv(REPORT_DIR / "disagreements.csv", index=False)
+    odd.to_csv(csv_path, index=False)
     flights.drop(columns=["checks"]).to_parquet(REPORT_DIR / "flights_test.parquet", index=False)
 
     n = len(flights)

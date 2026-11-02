@@ -1,7 +1,8 @@
 """Tests for feature 9. Run them from the repo root with: python -m pytest"""
 import pandas as pd
 
-from adsb.compare import DISAGREEMENT_COLUMNS, agreement, confusion, disagreements, flight_table
+from adsb.compare import (DISAGREEMENT_COLUMNS, agreement, confusion, disagreements, flight_table,
+                          has_manual_work)
 from adsb.model import FEATURES
 
 THRESHOLD = 0.7
@@ -77,5 +78,17 @@ def test_disagreements_file_has_the_right_columns():
     assert list(odd.columns) == DISAGREEMENT_COLUMNS
     assert list(odd["trajectory_id"]) == ["B"]      # only one detector flags B
     assert list(odd["flagged_by"]) == ["forest only"]
-    assert odd["my_verdict"].iloc[0] == ""
+    assert odd["my_verdict"].iloc[0] == "" and odd["my_note"].iloc[0] == ""
+    assert DISAGREEMENT_COLUMNS[-2:] == ["my_verdict", "my_note"]
     assert odd["max_score"].iloc[0] == 0.72         # its highest report
+
+
+def test_manual_work_is_detected_so_it_is_never_overwritten(tmp_path):
+    path = tmp_path / "disagreements.csv"
+    assert not has_manual_work(path)                                  # no file yet
+    pd.DataFrame({"trajectory_id": ["A"], "my_verdict": [""], "my_note": [""]}).to_csv(path, index=False)
+    assert not has_manual_work(path)                                  # empty columns only
+    pd.DataFrame({"trajectory_id": ["A"], "my_verdict": [""], "my_note": ["turning in the pattern"]}).to_csv(path, index=False)
+    assert has_manual_work(path)                                      # a note counts
+    pd.DataFrame({"trajectory_id": ["A"], "my_verdict": ["false alarm"], "my_note": [""]}).to_csv(path, index=False)
+    assert has_manual_work(path)                                      # a verdict counts
