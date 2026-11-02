@@ -49,6 +49,7 @@ token is cached in the macOS keychain afterwards.
 | #8 | `scripts/train_model.py` | Isolation forest: trained on the training days, threshold and tree count chosen on the validation days, saves the model in `data/models/` and its flags in `data/flags/iforest_flags.parquet` |
 | #9 | `scripts/compare_detectors.py` | Per-flight comparison of the forest and the rules on the test days; writes `data/report/comparison.json` and `data/report/disagreements.csv` (with an empty `my_verdict` column) |
 | #9 helper | `scripts/plot_disagreements.py` | One picture per disagreeing flight in `data/report/disagreements/`, to fill in `my_verdict` and `my_note` by hand |
+| #16 | `scripts/summary_report.py` | Writes `data/report/metrics.json`, the LaTeX tables (`table_*.tex`) and `score_distribution.png` / `.pdf`, including the counts of my manual verdicts |
 | helper | `scripts/show_trajectory.py` | Prints one saved trajectory in time order |
 | helper | `scripts/plot_snapshot.py` | Scatter plot of the newest snapshot, colored by altitude |
 
@@ -67,6 +68,8 @@ done
 python scripts/label_dataset.py
 python scripts/train_model.py              # feature 8, about 5 minutes
 python scripts/compare_detectors.py        # feature 9, a few seconds
+python scripts/plot_disagreements.py       # pictures for filling in my_verdict and my_note by hand
+python scripts/summary_report.py           # feature 16, after the verdicts are filled in
 ```
 
 ## Demo run sheet (1 to 2 minutes)
