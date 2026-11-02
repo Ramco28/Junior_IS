@@ -3,5 +3,7 @@ pandas>=2.1
 numpy>=1.26
 pyarrow>=14
 matplotlib>=3.8
+scikit-learn>=1.5
+joblib>=1.4
 trino[external-authentication-token-cache]>=0.330
 pytest>=8

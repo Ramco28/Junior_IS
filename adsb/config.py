@@ -8,6 +8,7 @@ HISTORICAL_DIR = DATA_DIR / "historical"
 FEATURES_DIR = DATA_DIR / "features"
 FLAGS_DIR = DATA_DIR / "flags"
 LABELED_DIR = DATA_DIR / "labeled"
+MODELS_DIR = DATA_DIR / "models"
 CREDENTIALS_FILE = ROOT / "credentials.json"
 
 # Live data: the OpenSky REST API, and the server that gives me login tokens
