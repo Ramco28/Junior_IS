@@ -23,7 +23,7 @@ live backend, the dashboard and the stretch goals continue in my Senior I.S.
 | 6 | [Rule-based anomaly checks (speed, duplicate ICAO, altitude/speed change, route deviation)](https://github.com/Ramco28/Junior_IS/issues/6) | 10/01 | 14h | Four configurable-threshold checks | Done |
 | 7 | [Label historical dataset via weak labeling](https://github.com/Ramco28/Junior_IS/issues/7) | 10/01 | 4h | Uses rule-based checks as initial labels | Done |
 | 8 | [Train baseline ML model](https://github.com/Ramco28/Junior_IS/issues/8) | 11/01 | 8h | e.g. isolation forest or autoencoder | Done |
-| 9 | [Evaluate ML model vs. rule-based detector](https://github.com/Ramco28/Junior_IS/issues/9) | 11/08 | 4h | Agreement/disagreement statistics on held-out data | Not started |
+| 9 | [Evaluate ML model vs. rule-based detector](https://github.com/Ramco28/Junior_IS/issues/9) | 11/08 | 4h | Agreement/disagreement statistics on held-out data | Done |
 | 16 | [Summary report generation script](https://github.com/Ramco28/Junior_IS/issues/16) | 11/12 | 3h | Precision, recall, agreement metrics | Not started |
 
 ## Stretch Goals
@@ -67,6 +67,7 @@ Main command for each finished feature:
 | 6 | `python scripts/run_rules.py --live` | Runs the rule-based checks (speed, duplicate ICAO, altitude and speed change, route deviation) on a feature file and saves the flags |
 | 7 | `python scripts/label_dataset.py` | Labels every historical report and trajectory with the rule-based checks (weak labels) and assigns whole days to train, validation and test |
 | 8 | `python scripts/train_model.py` | Trains an isolation forest on the training days, sets its threshold and tree count on the validation days, and flags reports on every day |
+| 9 | `python scripts/compare_detectors.py` | Compares the forest with the rules per flight on the test days and writes the disagreements to check by hand |
 
 Folders:
 

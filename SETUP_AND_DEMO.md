@@ -47,6 +47,7 @@ token is cached in the macOS keychain afterwards.
 | #6, #7 | `scripts/mark_mismatches.py` | Decides over all historical hours which aircraft do not fly like their registered class, and writes it into every feature file |
 | #7 | `scripts/label_dataset.py` | Labels all historical reports and trajectories from the rule flags, splits by day, saves to `data/labeled/` |
 | #8 | `scripts/train_model.py` | Isolation forest: trained on the training days, threshold and tree count chosen on the validation days, saves the model in `data/models/` and its flags in `data/flags/iforest_flags.parquet` |
+| #9 | `scripts/compare_detectors.py` | Per-flight comparison of the forest and the rules on the test days; writes `data/report/comparison.json` and `data/report/disagreements.csv` (with an empty `my_verdict` column) |
 | helper | `scripts/show_trajectory.py` | Prints one saved trajectory in time order |
 | helper | `scripts/plot_snapshot.py` | Scatter plot of the newest snapshot, colored by altitude |
 
@@ -64,6 +65,7 @@ for f in data/features/features_ohio_*.parquet; do
 done
 python scripts/label_dataset.py
 python scripts/train_model.py              # feature 8, about 5 minutes
+python scripts/compare_detectors.py        # feature 9, a few seconds
 ```
 
 ## Demo run sheet (1 to 2 minutes)
