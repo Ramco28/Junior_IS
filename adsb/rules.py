@@ -499,6 +499,11 @@ def _aircraft_summary(rows: pd.DataFrame, thresholds: dict) -> pd.DataFrame:
     for name in ("max_speed_mps", "max_altitude_m"):
         per_aircraft[name] = per_aircraft["aircraft_class"].map(
             {c: limits[name] for c, limits in thresholds.items()})
+    # When no aircraft is left (for example a table with only callsign guesses),
+    # the columns above come out empty and without a number type, and newer
+    # pandas refuses to compare them. Forcing them to numbers keeps it working.
+    numbers = ["median_speed_mps", "median_altitude_m", "high_altitude_m", "max_speed_mps", "max_altitude_m"]
+    per_aircraft[numbers] = per_aircraft[numbers].astype("float64")
     too_fast = per_aircraft["median_speed_mps"] > per_aircraft["max_speed_mps"]
     too_high = per_aircraft["high_altitude_m"] > per_aircraft["max_altitude_m"]
     per_aircraft["reason"] = np.select([too_fast & too_high, too_fast, too_high],
