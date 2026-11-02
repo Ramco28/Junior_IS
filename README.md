@@ -41,6 +41,29 @@ These features are not built this semester. They continue in my Senior I.S. next
 | 17 | [Historical playback, sequence-based ML model, exportable anomaly report](https://github.com/Ramco28/Junior_IS/issues/17) | Senior I.S. | 18h | Combined stretch bucket | Planned |
 | | Evaluation on injected anomalies with known ground truth | Senior I.S. | TBD | Synthetic anomalies of each category (including duplicate ICAO), so precision, recall and false alarm rate can be measured against a true answer | Planned |
 
+## Results (Junior I.S.)
+
+I compared an isolation forest with my rule-based checks, flight by flight, on three held-out
+test days (October 4, 6 and 7, 2026) of ADS-B data over Ohio. There is no ground truth, so the
+numbers below measure how much the forest agrees with the weak labels from my rules, not how
+often it is right.
+
+| | Forest flagged | Forest not flagged |
+|---|---|---|
+| Rules anomalous | 10 (both) | 21 (rules only) |
+| Rules normal | 44 (forest only) | 7,159 (neither) |
+
+Against the weak labels, the forest has a precision of 18.5% and a recall of 32.3%, and it flags
+0.6% of the flights my rules call normal.
+
+I inspected every disagreement by hand. Of the 44 flights only the forest flagged, 2 were genuine
+anomalies, 5 equipment faults and 37 false alarms; of the 21 flights only the rules flagged, 0 were
+genuine anomalies, 13 equipment faults and 8 false alarms.
+
+`python scripts/summary_report.py` regenerates the numbers, the LaTeX tables and the figure from the
+saved results. They are written to `data/report/` (`metrics.json`, `table_*.tex`,
+`score_distribution.png` and `.pdf`).
+
 ## Running the project
 
 Setup (once):
