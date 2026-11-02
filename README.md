@@ -6,7 +6,11 @@
 This project compares machine learning and rule-based approaches to detecting anomalous
 aircraft behavior in ADS-B flight data. The table below tracks the features I'm building,
 with due dates and time estimates set through Planning Poker. Each row links to its
-GitHub issue. The stretch goals listed at the end will be tackled if time permits.
+GitHub issue.
+
+With my professor's agreement, the scope of this Junior I.S. was reduced: it ends with the
+baseline model (#8), its comparison with the rules (#9) and the summary report (#16). The
+live backend, the dashboard and the stretch goals continue in my Senior I.S.
 
 | # | Feature | Due Date | Estimate | Notes | Status |
 |---|---------|----------|----------|-------|--------|
@@ -18,21 +22,24 @@ GitHub issue. The stretch goals listed at the end will be tackled if time permit
 | 18 | [Enrich aircraft type from the OpenSky aircraft database](https://github.com/Ramco28/Junior_IS/issues/18) | 10/01 | 2h | Type and manufacturer by icao24, so rule thresholds can differ by aircraft type | Done |
 | 6 | [Rule-based anomaly checks (speed, duplicate ICAO, altitude/speed change, route deviation)](https://github.com/Ramco28/Junior_IS/issues/6) | 10/01 | 14h | Four configurable-threshold checks | Done |
 | 7 | [Label historical dataset via weak labeling](https://github.com/Ramco28/Junior_IS/issues/7) | 10/01 | 4h | Uses rule-based checks as initial labels | Done |
-| 8 | [Train baseline ML model](https://github.com/Ramco28/Junior_IS/issues/8) | 10/22 | 8h | e.g. isolation forest or autoencoder | In progress |
-| 9 | [Evaluate ML model vs. rule-based detector](https://github.com/Ramco28/Junior_IS/issues/9) | 10/22 | 4h | Agreement/disagreement statistics on held-out data | In progress |
-| 10 | [Build backend service running both detectors](https://github.com/Ramco28/Junior_IS/issues/10) | 10/22 | 8h | Shared output format for live data | In progress |
-| 11 | [Live map view](https://github.com/Ramco28/Junior_IS/issues/11) | 10/29 | 6h | Displays currently tracked aircraft | Not started |
-| 12 | [Highlight flagged aircraft on map](https://github.com/Ramco28/Junior_IS/issues/12) | 10/29 | 2h | Distinct styling from unflagged aircraft | Not started |
-| 13 | [Side panel of flagged aircraft](https://github.com/Ramco28/Junior_IS/issues/13) | 10/29 | 4h | Anomaly type, score, detector source | Not started |
-| 14 | [Click handling + trajectory detail view](https://github.com/Ramco28/Junior_IS/issues/14) | 10/29 | 4h | Centers map, opens detail on selection | Not started |
-| 15 | [Filter and toggle controls](https://github.com/Ramco28/Junior_IS/issues/15) | 10/29 | 3h | Filter by detector; toggle anomaly categories | Not started |
+| 8 | [Train baseline ML model](https://github.com/Ramco28/Junior_IS/issues/8) | 11/01 | 8h | e.g. isolation forest or autoencoder | In progress |
+| 9 | [Evaluate ML model vs. rule-based detector](https://github.com/Ramco28/Junior_IS/issues/9) | 11/08 | 4h | Agreement/disagreement statistics on held-out data | Not started |
 | 16 | [Summary report generation script](https://github.com/Ramco28/Junior_IS/issues/16) | 11/12 | 3h | Precision, recall, agreement metrics | Not started |
 
 ## Stretch Goals
 
+These features are not built this semester. They continue in my Senior I.S. next year.
+
 | # | Feature | Due Date | Estimate | Notes | Status |
 |---|---------|----------|----------|-------|--------|
-| 17 | [Historical playback, sequence-based ML model, exportable anomaly report](https://github.com/Ramco28/Junior_IS/issues/17) | if time permits | 18h | Combined stretch bucket | Not started |
+| 10 | [Build backend service running both detectors](https://github.com/Ramco28/Junior_IS/issues/10) | Senior I.S. | 8h | Shared output format for live data | Planned |
+| 11 | [Live map view](https://github.com/Ramco28/Junior_IS/issues/11) | Senior I.S. | 6h | Displays currently tracked aircraft | Planned |
+| 12 | [Highlight flagged aircraft on map](https://github.com/Ramco28/Junior_IS/issues/12) | Senior I.S. | 2h | Distinct styling from unflagged aircraft | Planned |
+| 13 | [Side panel of flagged aircraft](https://github.com/Ramco28/Junior_IS/issues/13) | Senior I.S. | 4h | Anomaly type, score, detector source | Planned |
+| 14 | [Click handling + trajectory detail view](https://github.com/Ramco28/Junior_IS/issues/14) | Senior I.S. | 4h | Centers map, opens detail on selection | Planned |
+| 15 | [Filter and toggle controls](https://github.com/Ramco28/Junior_IS/issues/15) | Senior I.S. | 3h | Filter by detector; toggle anomaly categories | Planned |
+| 17 | [Historical playback, sequence-based ML model, exportable anomaly report](https://github.com/Ramco28/Junior_IS/issues/17) | Senior I.S. | 18h | Combined stretch bucket | Planned |
+| | Evaluation on injected anomalies with known ground truth | Senior I.S. | TBD | Synthetic anomalies of each category (including duplicate ICAO), so precision, recall and false alarm rate can be measured against a true answer | Planned |
 
 ## Running the project
 
