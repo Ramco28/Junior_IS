@@ -57,7 +57,8 @@ def main():
     labeled = pd.read_parquet(LABELED_DIR / "labeled_rows.parquet", columns=COLUMNS,
                               filters=[("split", "==", SPLIT)])
     rows, _ = model_rows(labeled)
-    rows = rows.merge(scores[["trajectory_id", "time", "score"]], on=["trajectory_id", "time"], how="inner")
+    rows = rows.merge(scores[["trajectory_id", "time", "score"]],
+                      on=["trajectory_id", "time"], how="inner")
     odd = disagreements(flights, rows)
 
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
@@ -67,13 +68,17 @@ def main():
     flight_count = len(flights)
     not_scored = flights[~flights["scored"]]
     route_only = flights[flights["route_only"]]
-    print(f"Test days: {', '.join(settings['test_days'])}. Forest: {settings['n_estimators']} trees, "
-          f"threshold {threshold:.4f}.")
-    print(f"Test flights: {flight_count:,}. Scored by the forest: {int(flights['scored'].sum()):,}. "
-          f"Not scored (no usable report): {len(not_scored):,}, of which {int(not_scored['rules_anomalous'].sum())} "
-          f"are rules anomalous. Not scored flights are left out of the comparison.")
-    print("\nOnly the REPORT-level rule checks are compared (speed, position jump, climb rate, acceleration).")
-    print("Route deviation and duplicate ICAO judge whole trajectories, so they are not part of it.")
+    print(f"Test days: {', '.join(settings['test_days'])}. "
+          f"Forest: {settings['n_estimators']} trees, threshold {threshold:.4f}.")
+    print(f"Test flights: {flight_count:,}. "
+          f"Scored by the forest: {int(flights['scored'].sum()):,}. "
+          f"Not scored (no usable report): {len(not_scored):,}, "
+          f"of which {int(not_scored['rules_anomalous'].sum())} are rules anomalous. "
+          f"Not scored flights are left out of the comparison.")
+    print("\nOnly the REPORT-level rule checks are compared "
+          "(speed, position jump, climb rate, acceleration).")
+    print("Route deviation and duplicate ICAO judge whole trajectories, "
+          "so they are not part of it.")
     print(f"Test flights flagged ONLY by a trajectory-level check: {len(route_only)} "
           f"(route deviation {int(route_only['route_deviation'].sum())}, "
           f"duplicate ICAO {int(route_only['duplicate_icao'].sum())}).")
@@ -81,11 +86,14 @@ def main():
     print("\nPer-flight comparison on the scored test flights:")
     print(table.to_string())
     print("\nAgainst the rules' weak labels (not ground truth):")
-    print(f"  precision {pct(overall['precision'])}: of the {overall['both'] + overall['forest_only']} flights "
+    print(f"  precision {pct(overall['precision'])}: "
+          f"of the {overall['both'] + overall['forest_only']} flights "
           f"the forest flags, {overall['both']} are also flagged by the rules")
-    print(f"  recall    {pct(overall['recall'])}: of the {overall['both'] + overall['rules_only']} flights "
+    print(f"  recall    {pct(overall['recall'])}: "
+          f"of the {overall['both'] + overall['rules_only']} flights "
           f"the rules flag, the forest also flags {overall['both']}")
-    print(f"  the forest flags {pct(overall['rule_normal_flagged'])} of the flights the rules call normal "
+    print(f"  the forest flags {pct(overall['rule_normal_flagged'])} "
+          f"of the flights the rules call normal "
           f"({overall['forest_only']} of {overall['forest_only'] + overall['neither']:,})")
 
     show = classes.copy()
@@ -108,7 +116,8 @@ def main():
     result = {
         "split": SPLIT, "test_days": settings["test_days"], "threshold": threshold,
         "n_estimators": settings["n_estimators"],
-        "flights": flight_count, "scored": int(flights["scored"].sum()), "not_scored": len(not_scored),
+        "flights": flight_count, "scored": int(flights["scored"].sum()),
+        "not_scored": len(not_scored),
         "not_scored_rules_anomalous": int(not_scored["rules_anomalous"].sum()),
         "trajectory_level_only": len(route_only),
         "trajectory_level_only_route_deviation": int(route_only["route_deviation"].sum()),
@@ -122,12 +131,14 @@ def main():
     (REPORT_DIR / "comparison.json").write_text(json.dumps(result, indent=2, default=float) + "\n")
 
     print("\nIn plain words:")
-    print(f"  On the {int(flights['scored'].sum()):,} test flights the forest could score, both detectors flag "
-          f"{overall['both']}, both say normal for {overall['neither']:,}, and they disagree on "
-          f"{overall['rules_only'] + overall['forest_only']}.")
+    print(f"  On the {int(flights['scored'].sum()):,} test flights the forest could score, "
+          f"both detectors flag {overall['both']}, "
+          f"both say normal for {overall['neither']:,}, "
+          f"and they disagree on {overall['rules_only'] + overall['forest_only']}.")
     print(f"  The forest finds {pct(overall['recall'])} of the flights my rules flag, and "
           f"{pct(overall['precision'])} of what it flags is also flagged by my rules.")
-    print("  The disagreements are the interesting part: I check them by hand in disagreements.csv.")
+    print("  The disagreements are the interesting part: "
+          "I check them by hand in disagreements.csv.")
 
 
 if __name__ == "__main__":

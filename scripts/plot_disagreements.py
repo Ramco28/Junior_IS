@@ -52,8 +52,8 @@ def plot_flight(flight: pd.Series, rows: pd.DataFrame, threshold: float, path):
     track.scatter(rows.loc[rule, "lon"], rows.loc[rule, "lat"], color=RULE_COLOR, s=30,
                   label="rule flag", zorder=4)
     if top is not None:
-        track.scatter(rows.loc[top, "lon"], rows.loc[top, "lat"], color=TOP_COLOR, marker="*", s=200,
-                      label="highest forest score", zorder=5)
+        track.scatter(rows.loc[top, "lon"], rows.loc[top, "lat"], color=TOP_COLOR, marker="*",
+                      s=200, label="highest forest score", zorder=5)
     track.set_xlabel("Longitude")
     track.set_ylabel("Latitude")
     track.set_aspect("equal", adjustable="datalim")
@@ -83,13 +83,15 @@ def plot_flight(flight: pd.Series, rows: pd.DataFrame, threshold: float, path):
         if len(series) > 1:
             ax.legend(fontsize=7, loc="best")
         axes.append(ax)
-    axes[-1].axhline(threshold, color="black", linestyle="--", linewidth=1, label=f"threshold {threshold:.4f}")
+    axes[-1].axhline(threshold, color="black", linestyle="--", linewidth=1,
+                     label=f"threshold {threshold:.4f}")
     axes[-1].legend(fontsize=7, loc="best")
     axes[-1].set_xlabel("Time (UTC)")
     for ax in axes[:-1]:
         plt.setp(ax.get_xticklabels(), visible=False)
 
-    checks = flight["rule_checks"] if isinstance(flight["rule_checks"], str) and flight["rule_checks"] else "none"
+    checks = (flight["rule_checks"]
+              if isinstance(flight["rule_checks"], str) and flight["rule_checks"] else "none")
     callsign = flight["callsign"] if isinstance(flight["callsign"], str) else "no callsign"
     fig.suptitle(f"{callsign} ({flight['icao24']})   class {flight['aircraft_class']} "
                  f"(source {flight['aircraft_class_source']})   {flight['flagged_by']}\n"
@@ -105,7 +107,8 @@ def main():
     threshold = json.loads((MODELS_DIR / "iforest_settings.json").read_text())["threshold"]
     labeled = pd.read_parquet(LABELED_DIR / "labeled_rows.parquet", columns=COLUMNS,
                               filters=[("trajectory_id", "in", list(odd["trajectory_id"]))])
-    scores = pd.read_parquet(MODELS_DIR / "iforest_scores.parquet", columns=["trajectory_id", "time", "score"],
+    scores = pd.read_parquet(MODELS_DIR / "iforest_scores.parquet",
+                             columns=["trajectory_id", "time", "score"],
                              filters=[("split", "==", SPLIT)])
     # every report of the flight, with its score when the forest scored it
     rows = labeled.merge(scores, on=["trajectory_id", "time"], how="left")
@@ -113,8 +116,10 @@ def main():
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     made = 0
     for _, flight in odd.iterrows():
-        name = f"{flight['flagged_by'].replace(' ', '_')}_{int(flight['score_rank']):04d}_{flight['trajectory_id']}.png"
-        plot_flight(flight, rows[rows["trajectory_id"] == flight["trajectory_id"]], threshold, OUT_DIR / name)
+        name = (f"{flight['flagged_by'].replace(' ', '_')}_{int(flight['score_rank']):04d}_"
+                f"{flight['trajectory_id']}.png")
+        plot_flight(flight, rows[rows["trajectory_id"] == flight["trajectory_id"]],
+                    threshold, OUT_DIR / name)
         made += 1
     print(f"Saved {made} pictures in {OUT_DIR}")
 

@@ -28,7 +28,8 @@ from adsb.model import (CHECK, DETECTOR, FEATURES, MAX_SAMPLES, N_ESTIMATORS_GRI
 # only the columns the forest and its flags need (the full file is 240 MB)
 COLUMNS = ["trajectory_id", "time", "batch_time", "icao24", "aircraft_class", "split", "day",
            "on_ground", "batch_artifact", "dt_s", "velocity_mps", "heading_deg",
-           "speed_mismatch_mps", "vrate_mismatch_mps", "alt_rate_mps", "accel_mps2", "turn_rate_dps"]
+           "speed_mismatch_mps", "vrate_mismatch_mps", "alt_rate_mps", "accel_mps2",
+           "turn_rate_dps"]
 SPLITS = ["train", "validation", "test"]
 
 
@@ -40,7 +41,8 @@ def main():
     missing = missing.reindex(columns=SPLITS, fill_value=0)
 
     print(f"Reports in the labeled dataset: {len(labeled):,}")
-    print("Reports the forest uses, per split:", rows["split"].value_counts().reindex(SPLITS).to_dict())
+    print("Reports the forest uses, per split:",
+          rows["split"].value_counts().reindex(SPLITS).to_dict())
     print("\nReports left out because an input is missing (per feature and split):")
     print(missing.to_string())
 
@@ -54,8 +56,9 @@ def main():
     rule_flagged = set(trajectories.loc[trajectories["flagged_rows"] > 0, "trajectory_id"])
     budget_share = len(val_flights & rule_flagged) / len(val_flights)
     n_budget = round(budget_share * len(val_flights))
-    print(f"\nAlert budget: the rules flag {len(val_flights & rule_flagged)} of the {len(val_flights):,} "
-          f"scorable validation flights ({100 * budget_share:.2f}%), so each forest flags {n_budget}.")
+    print(f"\nAlert budget: the rules flag {len(val_flights & rule_flagged)} "
+          f"of the {len(val_flights):,} scorable validation flights "
+          f"({100 * budget_share:.2f}%), so each forest flags {n_budget}.")
 
     forests, thresholds, flagged = {}, {}, {}
     print("\nTree count   threshold   flagged validation flights   training time")
@@ -65,13 +68,15 @@ def main():
         per_flight = flight_scores(val, score_rows(forests[n], val))
         thresholds[n] = budget_threshold(per_flight, n_budget)
         flagged[n] = flagged_flights(per_flight, thresholds[n])
-        print(f"{n:>10}   {thresholds[n]:.4f}      {len(flagged[n]):>5}                     {time.time() - started:.0f} s")
+        print(f"{n:>10}   {thresholds[n]:.4f}      {len(flagged[n]):>5}"
+              f"                     {time.time() - started:.0f} s")
 
     chosen, overlaps = choose_n_estimators(flagged)
     print("\nStability: share of flagged validation flights in common")
     for (n, m), share in overlaps.items():
         print(f"  {n} vs {m} trees: {100 * share:.1f}%")
-    print(f"Chosen: {chosen} trees (smallest count with at least {100 * STABILITY_MIN_OVERLAP:.0f}% in common "
+    print(f"Chosen: {chosen} trees (smallest count with at least "
+          f"{100 * STABILITY_MIN_OVERLAP:.0f}% in common "
           f"with the next one, or the largest), threshold {thresholds[chosen]:.4f}")
 
     # score every day with the chosen forest (validation and test are never trained on)
@@ -82,15 +87,17 @@ def main():
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     FLAGS_DIR.mkdir(parents=True, exist_ok=True)
     joblib.dump(forest, MODELS_DIR / "iforest.joblib")
-    rows[["trajectory_id", "time", "icao24", "aircraft_class", "split", "day"]].assign(score=scores) \
-        .to_parquet(MODELS_DIR / "iforest_scores.parquet", index=False)
+    (rows[["trajectory_id", "time", "icao24", "aircraft_class", "split", "day"]]
+        .assign(score=scores)
+        .to_parquet(MODELS_DIR / "iforest_scores.parquet", index=False))
     flags.to_parquet(FLAGS_DIR / "iforest_flags.parquet", index=False)
 
     # flights per split: flagged by the forest, and with no scorable report at all
     scored_flights = rows.groupby("split")["trajectory_id"].nunique()
     all_flights = trajectories.groupby("split")["trajectory_id"].nunique()
-    flagged_per_split = flags.merge(rows[["trajectory_id", "split"]].drop_duplicates(), on="trajectory_id") \
-        .groupby("split")["trajectory_id"].nunique()
+    flagged_per_split = (flags.merge(rows[["trajectory_id", "split"]].drop_duplicates(),
+                                     on="trajectory_id")
+                         .groupby("split")["trajectory_id"].nunique())
     per_split = pd.DataFrame({"flights": all_flights, "scored": scored_flights,
                               "not scored": all_flights - scored_flights,
                               "flagged": flagged_per_split}).reindex(SPLITS).fillna(0).astype(int)
@@ -100,21 +107,25 @@ def main():
         "detector": DETECTOR, "check": CHECK, "features": FEATURES,
         "n_estimators": chosen, "n_estimators_grid": N_ESTIMATORS_GRID,
         "max_samples": MAX_SAMPLES, "random_state": RANDOM_STATE,
-        "threshold": threshold, "thresholds_by_n_estimators": {str(n): t for n, t in thresholds.items()},
-        "threshold_criterion": "alert budget: flag as many validation flights as the rules flag at report "
-                               "level, among the validation flights the forest can score",
-        "n_estimators_criterion": f"stability: smallest count whose flagged validation flights are at least "
-                                  f"{100 * STABILITY_MIN_OVERLAP:.0f}% the same as with the next larger count",
+        "threshold": threshold,
+        "thresholds_by_n_estimators": {str(n): t for n, t in thresholds.items()},
+        "threshold_criterion": "alert budget: flag as many validation flights as the rules flag "
+                               "at report level, among the validation flights the forest can score",
+        "n_estimators_criterion": f"stability: smallest count whose flagged validation flights "
+                                  f"are at least {100 * STABILITY_MIN_OVERLAP:.0f}% the same "
+                                  f"as with the next larger count",
         "overlaps": {f"{n}_vs_{m}": share for (n, m), share in overlaps.items()},
         "budget_share": budget_share, "budget_flights": n_budget,
         "validation_scorable_flights": len(val_flights),
         "training_days": sorted(train["day"].unique()),
         "validation_days": VALIDATION_DAYS, "test_days": TEST_DAYS,
         "reports_used": rows["split"].value_counts().reindex(SPLITS).astype(int).to_dict(),
-        "reports_left_out_missing_input": {f: missing.loc[f].astype(int).to_dict() for f in missing.index},
+        "reports_left_out_missing_input": {f: missing.loc[f].astype(int).to_dict()
+                                           for f in missing.index},
         "flights_per_split": per_split.drop(columns="flagged % of scored").to_dict(orient="index"),
     }
-    (MODELS_DIR / "iforest_settings.json").write_text(json.dumps(settings, indent=2, default=int) + "\n")
+    (MODELS_DIR / "iforest_settings.json").write_text(
+        json.dumps(settings, indent=2, default=int) + "\n")
 
     print("\nFlights per split:")
     print(per_split.to_string())
