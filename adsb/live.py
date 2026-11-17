@@ -11,6 +11,7 @@ class RateLimited(Exception):
     """OpenSky answers with HTTP 429 when I run out of daily API credits."""
 
     def __init__(self, retry_after_s: int):
+        """Remember how many seconds OpenSky asks me to wait before trying again."""
         super().__init__(f"Rate limited, retry after {retry_after_s} s")
         self.retry_after_s = retry_after_s
 

@@ -91,6 +91,7 @@ def agreement(table: pd.DataFrame) -> dict:
     neither = table.loc["rules normal", "forest not flagged"]
 
     def share(part, whole):
+        """part / whole, or NaN when whole is 0 (the share cannot be computed)."""
         return part / whole if whole else np.nan
 
     return {"both": int(both), "rules_only": int(rules_only), "forest_only": int(forest_only),

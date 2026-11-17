@@ -57,7 +57,7 @@ def build_query(start: datetime, end: datetime, bbox, sample_s: int = 10) -> str
 
 
 def fetch_state_vectors(start: datetime, end: datetime, bbox, sample_s: int = 10) -> pd.DataFrame:
-    # run the query and put the rows in a DataFrame
+    """Run the historical query for one time window and box, and return the rows as a table."""
     conn = connect()
     cur = conn.cursor()
     cur.execute(build_query(start, end, bbox, sample_s))

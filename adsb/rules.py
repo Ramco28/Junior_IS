@@ -230,6 +230,7 @@ def _flags(df: pd.DataFrame, mask: pd.Series, check: str, value: pd.Series, thre
 
 
 def _in_dt_window(df: pd.DataFrame, dt_range_s: tuple) -> pd.Series:
+    """True where the time since the previous report is inside dt_range_s."""
     return df["dt_s"].between(*dt_range_s)
 
 

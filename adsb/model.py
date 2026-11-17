@@ -131,6 +131,7 @@ def budget_threshold(per_flight: pd.Series, n_flagged: int) -> float:
 
 
 def flagged_flights(per_flight: pd.Series, threshold: float) -> set:
+    """The flights whose score is at or above the threshold."""
     return set(per_flight.index[per_flight >= threshold])
 
 

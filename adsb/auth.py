@@ -21,6 +21,7 @@ class TokenManager:
     anonymous = False  # the scripts check this to know which mode they are in
 
     def __init__(self, client_id: str, client_secret: str):
+        """Keep my client id and secret; no token is requested until token() is called."""
         self.client_id = client_id
         self.client_secret = client_secret
         self._token = None
@@ -59,7 +60,7 @@ class TokenManager:
         return self._token
 
     def headers(self) -> dict:
-        # the API expects the header "Authorization: Bearer <token>"
+        """The HTTP header that proves I am logged in: "Authorization: Bearer <token>"."""
         return {"Authorization": f"Bearer {self.token()}"}
 
 
@@ -74,7 +75,8 @@ class AnonymousAccess:
     anonymous = True
 
     def headers(self) -> dict:
-        return {}  # no Authorization header at all
+        """No Authorization header at all, so OpenSky treats me as anonymous."""
+        return {}
 
 
 def get_auth(path: Path = CREDENTIALS_FILE):
