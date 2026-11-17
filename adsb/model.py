@@ -16,7 +16,7 @@ from sklearn.ensemble import IsolationForest
 
 from .rules import CHECK_DT_RANGE_S, FLAG_COLUMNS, _airborne_step
 
-# The seven inputs (chosen after looking at the repeated reports, see my notes).
+# The seven inputs (chosen after looking at the repeated reports).
 # speed_mismatch_mps keeps its sign: together with turn_rate_dps the forest can
 # learn that a too LOW implied speed is normal in a turn, like my turn guard.
 FEATURES = [
