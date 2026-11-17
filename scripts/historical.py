@@ -17,11 +17,14 @@ from adsb.historical import fetch_state_vectors, parse_utc, split_trajectories
 
 def main():
     """Query one time window over Ohio, split it into trajectories and save it as Parquet."""
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--start", required=True, help='UTC start, e.g. "2026-09-20 14:00"')
     ap.add_argument("--hours", type=float, default=1.0, help="length of the window (default 1)")
-    ap.add_argument("--sample", type=int, default=10, help="keep one report every N seconds (default 10)")
-    ap.add_argument("--gap", type=int, default=900, help="silence in seconds that starts a new trajectory")
+    ap.add_argument("--sample", type=int, default=10,
+                    help="keep one report every N seconds (default 10)")
+    ap.add_argument("--gap", type=int, default=900,
+                    help="silence in seconds that starts a new trajectory")
     args = ap.parse_args()
 
     start = parse_utc(args.start)

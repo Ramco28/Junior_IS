@@ -39,7 +39,8 @@ def main():
     if "credits_remaining" in snap:
         print(f"API credits left today: {snap['credits_remaining']:,}")
     # show the first few aircraft that have a position
-    cols = ["icao24", "callsign", "origin_country", "latitude", "longitude", "baro_altitude", "velocity"]
+    cols = ["icao24", "callsign", "origin_country", "latitude", "longitude",
+            "baro_altitude", "velocity"]
     print("\n" + df[cols].dropna(subset=["latitude"]).head(8).to_string(index=False))
 
     if args.save:

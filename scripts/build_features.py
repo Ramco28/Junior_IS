@@ -1,4 +1,5 @@
-"""Features 4, 5 and 18: normalize my data, add the aircraft class and compute the per-aircraft features.
+"""Features 4, 5 and 18: normalize my data, add the aircraft class and compute the
+per-aircraft features.
 
     python scripts/build_features.py --historical data/historical/trajectories_ohio_20260920T1400_1h.parquet
     python scripts/build_features.py --live      # all stored snapshots in data/snapshots/
@@ -23,10 +24,12 @@ from adsb.rules import mark_artifacts, mark_class_mismatches
 
 def main():
     """Normalize one source, add aircraft class and features, and save the feature file."""
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     # exactly one of the two sources must be given
     source = ap.add_mutually_exclusive_group(required=True)
-    source.add_argument("--historical", metavar="PARQUET", help="a file saved by scripts/historical.py")
+    source.add_argument("--historical", metavar="PARQUET",
+                        help="a file saved by scripts/historical.py")
     source.add_argument("--live", action="store_true", help="use all snapshots in data/snapshots/")
     args = ap.parse_args()
 

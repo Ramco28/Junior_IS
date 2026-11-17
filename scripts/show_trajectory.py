@@ -38,7 +38,8 @@ def main():
           f"{len(track)} reports  {first:%H:%M} to {last:%H:%M} UTC\n")
     # turn the Unix time into a readable clock time for the table
     track = track.assign(utc=pd.to_datetime(track["time"], unit="s").dt.strftime("%H:%M:%S"))
-    print(track[["utc", "lat", "lon", "baroaltitude", "velocity", "heading"]].head(args.rows).round(4).to_string(index=False))
+    columns = ["utc", "lat", "lon", "baroaltitude", "velocity", "heading"]
+    print(track[columns].head(args.rows).round(4).to_string(index=False))
 
 
 if __name__ == "__main__":

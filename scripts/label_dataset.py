@@ -62,24 +62,29 @@ def main():
     print("\nReports flagged per check (a report can be flagged by more than one):")
     for check in REPORT_LEVEL_CHECKS:
         hit = rows["checks"].str.contains(check)
-        print(f"  {check:<16} {hit.sum():>6,} reports in {rows.loc[hit, 'trajectory_id'].nunique():>4,} trajectories")
+        print(f"  {check:<16} {hit.sum():>6,} reports in "
+              f"{rows.loc[hit, 'trajectory_id'].nunique():>4,} trajectories")
 
     print("\n=== Trajectory level (one row per flight) ===")
     flight_count = len(trajectories)
     print(f"trajectories        {flight_count:>7,}")
-    print(f"anomalous           {trajectories['anomalous'].sum():>7,}  {100 * trajectories['anomalous'].mean():.2f}%")
+    print(f"anomalous           {trajectories['anomalous'].sum():>7,}  "
+          f"{100 * trajectories['anomalous'].mean():.2f}%")
     print(f"  with flagged reports {(trajectories['flagged_rows'] > 0).sum():>4,}")
     for check in TRAJECTORY_LEVEL_CHECKS:
         print(f"  {check:<20} {trajectories[check].sum():>4,}")
-    print(f"class mismatch      {trajectories['class_mismatch'].sum():>7,}  (about the aircraft, not counted as anomalous)")
+    print(f"class mismatch      {trajectories['class_mismatch'].sum():>7,}  "
+          "(about the aircraft, not counted as anomalous)")
     print("\nAnomalous trajectories per split:")
     print(share_table(trajectories, "split", trajectories["anomalous"], "anomalous").to_string())
     print("\nAnomalous trajectories per aircraft class:")
-    print(share_table(trajectories, "aircraft_class", trajectories["anomalous"], "anomalous").to_string())
+    print(share_table(trajectories, "aircraft_class", trajectories["anomalous"],
+                      "anomalous").to_string())
 
     # why accuracy is the wrong score here
     normal_share = 100 * (rows["label"] == "normal").mean()
-    print(f"\nNote: a detector that always answers \"normal\" would be right on {normal_share:.2f}% of the")
+    print(f"\nNote: a detector that always answers \"normal\" would be right on "
+          f"{normal_share:.2f}% of the")
     print("reports and would find no anomaly at all. So accuracy says almost nothing here.")
     print("What matters is precision (of the reports it flags, how many are labeled anomaly)")
     print("and recall (of the reports labeled anomaly, how many it finds).")

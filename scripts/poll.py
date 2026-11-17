@@ -39,11 +39,13 @@ def save(snap: dict):
 
 
 def main():
-    """Ask for a new snapshot on a schedule and save each one until stopped or --count is reached."""
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    """Ask for a new snapshot on a schedule and save each one, until stopped or --count."""
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--interval", type=int, default=None,
                     help="seconds between requests (default 60, or 300 in anonymous mode)")
-    ap.add_argument("--count", type=int, default=0, help="stop after this many snapshots (0 = run forever)")
+    ap.add_argument("--count", type=int, default=0,
+                    help="stop after this many snapshots (0 = run forever)")
     ap.add_argument("--ohio", action="store_true", help="limit to the Ohio bounding box")
     args = ap.parse_args()
 
@@ -72,7 +74,8 @@ def main():
                     last_time = snap["time"]
                     saved += 1
                     credits = snap.get("credits_remaining", "?")
-                    print(f"  [{saved}] {len(snap['states']):>6,} aircraft -> {path.name}  (credits left: {credits})")
+                    print(f"  [{saved}] {len(snap['states']):>6,} aircraft -> {path.name}  "
+                          f"(credits left: {credits})")
             except RateLimitedError as error:
                 # out of credits: wait as long as OpenSky says, then try again
                 print(f"  out of credits, sleeping {error.retry_after_s} s")

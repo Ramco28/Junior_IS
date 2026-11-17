@@ -24,10 +24,13 @@ FT_PER_M = 3.281     # feet in one meter
 
 def main():
     """Run all rule-based checks on one feature file, save the flags and print a summary."""
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(description=__doc__,
+                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     source = ap.add_mutually_exclusive_group(required=True)
-    source.add_argument("--historical", metavar="FEATURES", help="a features file saved by scripts/build_features.py")
-    source.add_argument("--live", action="store_true", help="use data/features/features_live.parquet")
+    source.add_argument("--historical", metavar="FEATURES",
+                        help="a features file saved by scripts/build_features.py")
+    source.add_argument("--live", action="store_true",
+                        help="use data/features/features_live.parquet")
     args = ap.parse_args()
 
     path = FEATURES_DIR / "features_live.parquet" if args.live else Path(args.historical)
@@ -35,7 +38,8 @@ def main():
         raise SystemExit(f"No feature file at {path}. Run scripts/build_features.py first.")
     df = pd.read_parquet(path)
     if "aircraft_class" not in df.columns:
-        raise SystemExit(f"{path.name} has no aircraft_class column. Run scripts/build_features.py again.")
+        raise SystemExit(f"{path.name} has no aircraft_class column. "
+                         "Run scripts/build_features.py again.")
 
     flags = run_all_checks(df)
 
@@ -46,8 +50,10 @@ def main():
     anomalies = flags[~flags["is_artifact"]]   # blamed on the aircraft
     artifacts = flags[flags["is_artifact"]]    # blamed on the data
     print(f"Reports checked:    {len(df):,} in {df['trajectory_id'].nunique():,} trajectories")
-    print(f"Aircraft anomalies: {len(anomalies):,} flags in {anomalies['trajectory_id'].nunique():,} trajectories")
-    print(f"Data artifacts:     {len(artifacts):,} flags (from unreliable batches, not counted above)")
+    print(f"Aircraft anomalies: {len(anomalies):,} flags in "
+          f"{anomalies['trajectory_id'].nunique():,} trajectories")
+    print(f"Data artifacts:     {len(artifacts):,} flags "
+          "(from unreliable batches, not counted above)")
     print(f"Saved {out}")
 
     if not anomalies.empty:
@@ -56,7 +62,8 @@ def main():
         class_sizes = df.groupby("aircraft_class")["trajectory_id"].nunique()
         table = anomalies.groupby(["check", "aircraft_class"]).agg(
             flags=("time", "size"), trajectories=("trajectory_id", "nunique")).reset_index()
-        table["% of class"] = (100 * table["trajectories"] / table["aircraft_class"].map(class_sizes)).round(1)
+        table["% of class"] = (100 * table["trajectories"]
+                               / table["aircraft_class"].map(class_sizes)).round(1)
         print("\nAircraft anomalies per check and class:")
         print(table.to_string(index=False))
 
