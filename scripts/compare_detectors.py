@@ -80,7 +80,7 @@ def main():
 
     print("\nPer-flight comparison on the scored test flights:")
     print(table.to_string())
-    print(f"\nAgainst the rules' weak labels (not ground truth):")
+    print("\nAgainst the rules' weak labels (not ground truth):")
     print(f"  precision {pct(overall['precision'])}: of the {overall['both'] + overall['forest_only']} flights "
           f"the forest flags, {overall['both']} are also flagged by the rules")
     print(f"  recall    {pct(overall['recall'])}: of the {overall['both'] + overall['rules_only']} flights "
