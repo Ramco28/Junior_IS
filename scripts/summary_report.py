@@ -77,10 +77,12 @@ def main():
 
     # ---- metrics.json: everything in one file
     metrics = {
-        "note": "Comparison against the weak labels of my rule-based checks, not against ground truth.",
+        "note": "Comparison against the weak labels of my rule-based checks, "
+                "not against ground truth.",
         "model": {key: settings[key] for key in [
-            "features", "n_estimators", "n_estimators_grid", "max_samples", "random_state", "threshold",
-            "threshold_criterion", "n_estimators_criterion", "overlaps", "budget_share", "budget_flights",
+            "features", "n_estimators", "n_estimators_grid", "max_samples", "random_state",
+            "threshold", "threshold_criterion", "n_estimators_criterion", "overlaps",
+            "budget_share", "budget_flights",
             "validation_scorable_flights", "training_days", "validation_days", "test_days",
             "reports_used", "reports_left_out_missing_input", "flights_per_split"]},
         "test_comparison": comparison,
@@ -88,8 +90,10 @@ def main():
             "per_detector": verdicts.to_dict(orient="index"),
             "total": verdicts.sum().to_dict(),
             "definitions": {
-                "genuine anomaly": "the aircraft's behavior is really unusual or potentially unsafe",
-                "equipment fault": "the data is physically impossible (position jump, frozen value, altitude step)",
+                "genuine anomaly": "the aircraft's behavior is really unusual "
+                                   "or potentially unsafe",
+                "equipment fault": "the data is physically impossible "
+                                   "(position jump, frozen value, altitude step)",
                 "false alarm": "the flight is normal even if it is rare for the model",
             },
         },
@@ -100,24 +104,31 @@ def main():
     # ---- LaTeX tables
     confusion_tex = latex_table(
         ["", "Forest flagged", "Forest not flagged", "Total"],
-        [["Rules anomalous", confusion["both"], confusion["rules_only"], confusion["both"] + confusion["rules_only"]],
-         ["Rules normal", confusion["forest_only"], f"{confusion['neither']:,}", f"{confusion['forest_only'] + confusion['neither']:,}"],
-         ["Total", confusion["both"] + confusion["forest_only"], f"{confusion['rules_only'] + confusion['neither']:,}",
+        [["Rules anomalous", confusion["both"], confusion["rules_only"],
+          confusion["both"] + confusion["rules_only"]],
+         ["Rules normal", confusion["forest_only"], f"{confusion['neither']:,}",
+          f"{confusion['forest_only'] + confusion['neither']:,}"],
+         ["Total", confusion["both"] + confusion["forest_only"],
+          f"{confusion['rules_only'] + confusion['neither']:,}",
           f"{comparison['scored']:,}"]])
     (REPORT_DIR / "table_confusion.tex").write_text(confusion_tex)
 
     per_class = comparison["per_class"]
     class_rows = [[cls, f"{v['scored_flights']:,}", v["both"], v["rules_only"], v["forest_only"],
-                   f"{v['neither']:,}", pct(v["precision"]), pct(v["recall"]), pct(v["rule_normal_flagged"])]
+                   f"{v['neither']:,}", pct(v["precision"]), pct(v["recall"]),
+                   pct(v["rule_normal_flagged"])]
                   for cls, v in per_class.items()]
-    class_rows.append(["all", f"{comparison['scored']:,}", confusion["both"], confusion["rules_only"], confusion["forest_only"],
-                       f"{confusion['neither']:,}", pct(confusion["precision"]), pct(confusion["recall"]), pct(confusion["rule_normal_flagged"])])
+    class_rows.append(["all", f"{comparison['scored']:,}", confusion["both"],
+                       confusion["rules_only"], confusion["forest_only"],
+                       f"{confusion['neither']:,}", pct(confusion["precision"]),
+                       pct(confusion["recall"]), pct(confusion["rule_normal_flagged"])])
     (REPORT_DIR / "table_per_class.tex").write_text(latex_table(
         ["Class", "Flights", "Both", "Rules only", "Forest only", "Neither",
          "Precision", "Recall", "Normal flagged"], class_rows))
 
     length_rows = [[g["group"], f"{g['min_reports']} to {g['max_reports']}", f"{g['flights']:,}",
-                    pct(g["rules_flagged"]), pct(g["forest_flagged"])] for g in comparison["by_length"]]
+                    pct(g["rules_flagged"]), pct(g["forest_flagged"])]
+                   for g in comparison["by_length"]]
     (REPORT_DIR / "table_flight_length.tex").write_text(latex_table(
         ["Quartile", "Scored reports", "Flights", "Rules flagged", "Forest flagged"], length_rows))
 
@@ -138,9 +149,10 @@ def main():
     print(f"Test days {', '.join(settings['test_days'])}: {comparison['flights']:,} flights, "
           f"{comparison['scored']:,} scored, {comparison['not_scored']} not scored.")
     print(f"Forest: {settings['n_estimators']} trees, threshold {settings['threshold']:.4f}.")
-    print(f"Per flight: both {confusion['both']}, rules only {confusion['rules_only']}, forest only {confusion['forest_only']}, "
-          f"neither {confusion['neither']:,}.")
-    print(f"Against the weak labels: precision {pct(confusion['precision'])}, recall {pct(confusion['recall'])}, "
+    print(f"Per flight: both {confusion['both']}, rules only {confusion['rules_only']}, "
+          f"forest only {confusion['forest_only']}, neither {confusion['neither']:,}.")
+    print(f"Against the weak labels: precision {pct(confusion['precision'])}, "
+          f"recall {pct(confusion['recall'])}, "
           f"rule-normal flights flagged {pct(confusion['rule_normal_flagged'])}.")
     print("\nMy verdicts on the disagreements:")
     print(verdicts.to_string())
