@@ -30,10 +30,10 @@ def haversine_m(lat1, lon1, lat2, lon2):
     sphere. It works on single numbers and on whole pandas columns.
     """
     # the formula needs radians, not degrees
-    lat1, lon1, lat2, lon2 = (np.radians(x) for x in (lat1, lon1, lat2, lon2))
-    a = (np.sin((lat2 - lat1) / 2) ** 2
-         + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2)
-    return 2 * EARTH_RADIUS_M * np.arcsin(np.sqrt(a))
+    lat1, lon1, lat2, lon2 = (np.radians(angle) for angle in (lat1, lon1, lat2, lon2))
+    half_chord = (np.sin((lat2 - lat1) / 2) ** 2
+                  + np.cos(lat1) * np.cos(lat2) * np.sin((lon2 - lon1) / 2) ** 2)
+    return 2 * EARTH_RADIUS_M * np.arcsin(np.sqrt(half_chord))
 
 
 def wrap_degrees(delta):
@@ -54,23 +54,24 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     of each trajectory has no previous report, so its features are missing.
     """
     df = df.sort_values(["trajectory_id", "time"]).reset_index(drop=True)
-    g = df.groupby("trajectory_id")
+    by_trajectory = df.groupby("trajectory_id")
 
     # diff() is "this row minus the previous row", restarted for each trajectory
-    dt = g["time"].diff().astype("float64")
+    dt = by_trajectory["time"].diff().astype("float64")
     # a time gap of 0 would mean dividing by zero and getting infinity, so I
     # replace it with missing: every rate below is then missing too
     dt = dt.where(dt > 0)
     df["dt_s"] = dt
 
     # shift() gives the previous row's value, so I have both ends of each step
-    df["distance_m"] = haversine_m(g["lat"].shift(), g["lon"].shift(), df["lat"], df["lon"])
+    df["distance_m"] = haversine_m(by_trajectory["lat"].shift(), by_trajectory["lon"].shift(),
+                                   df["lat"], df["lon"])
     df["implied_speed_mps"] = df["distance_m"] / dt
     df["speed_mismatch_mps"] = df["implied_speed_mps"] - df["velocity_mps"]
 
-    df["alt_rate_mps"] = g["baro_altitude_m"].diff() / dt
+    df["alt_rate_mps"] = by_trajectory["baro_altitude_m"].diff() / dt
     df["vrate_mismatch_mps"] = df["alt_rate_mps"] - df["vertical_rate_mps"]
 
-    df["accel_mps2"] = g["velocity_mps"].diff() / dt
-    df["turn_rate_dps"] = wrap_degrees(g["heading_deg"].diff()) / dt
+    df["accel_mps2"] = by_trajectory["velocity_mps"].diff() / dt
+    df["turn_rate_dps"] = wrap_degrees(by_trajectory["heading_deg"].diff()) / dt
     return df
