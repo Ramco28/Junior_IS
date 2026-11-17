@@ -7,7 +7,7 @@ import requests
 from .config import API_BASE, STATE_FIELDS
 
 
-class RateLimited(Exception):
+class RateLimitedError(Exception):
     """OpenSky answers with HTTP 429 when I run out of daily API credits."""
 
     def __init__(self, retry_after_s: int):
@@ -36,7 +36,7 @@ def fetch_states(auth, bbox=None) -> dict:
     if resp.status_code == 429:
         # OpenSky tells me how many seconds to wait before trying again
         retry = int(resp.headers.get("X-Rate-Limit-Retry-After-Seconds", 600))
-        raise RateLimited(retry)
+        raise RateLimitedError(retry)
     resp.raise_for_status()
     data = resp.json()
     data["states"] = data.get("states") or []  # OpenSky sends null instead of [] when there are no aircraft

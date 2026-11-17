@@ -25,7 +25,7 @@ import requests
 import _path  # noqa: F401  (lets me import adsb from here)
 from adsb.auth import get_auth
 from adsb.config import OHIO_BBOX, SNAPSHOT_DIR
-from adsb.live import RateLimited, fetch_states
+from adsb.live import RateLimitedError, fetch_states
 
 
 def save(snap: dict):
@@ -73,7 +73,7 @@ def main():
                     saved += 1
                     credits = snap.get("credits_remaining", "?")
                     print(f"  [{saved}] {len(snap['states']):>6,} aircraft -> {path.name}  (credits left: {credits})")
-            except RateLimited as error:
+            except RateLimitedError as error:
                 # out of credits: wait as long as OpenSky says, then try again
                 print(f"  out of credits, sleeping {error.retry_after_s} s")
                 time.sleep(error.retry_after_s)
