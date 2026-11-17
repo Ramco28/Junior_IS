@@ -37,7 +37,7 @@ RULE_COLOR = "tab:orange"  # reports flagged by a report-level rule
 def plot_flight(flight: pd.Series, rows: pd.DataFrame, threshold: float, path):
     """Draw one disagreeing flight and save it to path."""
     rows = rows.sort_values("time")
-    t = pd.to_datetime(rows["time"], unit="s")
+    times = pd.to_datetime(rows["time"], unit="s")
     rule = rows["label"] == "anomaly"
     top = rows["score"].idxmax() if rows["score"].notna().any() else None
 
@@ -72,12 +72,12 @@ def plot_flight(flight: pd.Series, rows: pd.DataFrame, threshold: float, path):
     for i, (ylabel, series) in enumerate(panels):
         ax = fig.add_subplot(grid[i, 1], sharex=axes[0] if axes else None)
         for label, values in series:
-            ax.plot(t, values, linewidth=1, label=label or None)
+            ax.plot(times, values, linewidth=1, label=label or None)
         # mark the same reports as on the map, in every panel
         first_values = series[0][1]
-        ax.scatter(t[rule], first_values[rule], color=RULE_COLOR, s=12, zorder=4)
+        ax.scatter(times[rule], first_values[rule], color=RULE_COLOR, s=12, zorder=4)
         if top is not None:
-            ax.scatter(t[top], first_values[top], color=TOP_COLOR, marker="*", s=90, zorder=5)
+            ax.scatter(times[top], first_values[top], color=TOP_COLOR, marker="*", s=90, zorder=5)
         ax.set_ylabel(ylabel, fontsize=9)
         ax.grid(alpha=0.3)
         if len(series) > 1:

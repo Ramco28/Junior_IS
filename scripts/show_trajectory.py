@@ -28,15 +28,16 @@ def main():
     # longest one overall can be a plane parked at an airport for the whole hour
     airborne = df[df["onground"] == False]  # noqa: E712 (column can hold None)
     tid = args.id or airborne["trajectory_id"].value_counts().idxmax()
-    t = df[df["trajectory_id"] == tid].sort_values("time")
+    track = df[df["trajectory_id"] == tid].sort_values("time")
 
-    first, last = (datetime.fromtimestamp(x, timezone.utc) for x in (t["time"].iloc[0], t["time"].iloc[-1]))
+    first, last = (datetime.fromtimestamp(stamp, timezone.utc)
+                   for stamp in (track["time"].iloc[0], track["time"].iloc[-1]))
     print(f"{path.name if hasattr(path, 'name') else path}")
-    print(f"Trajectory {tid}  callsign {t['callsign'].iloc[0] or '?'}  "
-          f"{len(t)} reports  {first:%H:%M} to {last:%H:%M} UTC\n")
+    print(f"Trajectory {tid}  callsign {track['callsign'].iloc[0] or '?'}  "
+          f"{len(track)} reports  {first:%H:%M} to {last:%H:%M} UTC\n")
     # turn the Unix time into a readable clock time for the table
-    t = t.assign(utc=pd.to_datetime(t["time"], unit="s").dt.strftime("%H:%M:%S"))
-    print(t[["utc", "lat", "lon", "baroaltitude", "velocity", "heading"]].head(args.rows).round(4).to_string(index=False))
+    track = track.assign(utc=pd.to_datetime(track["time"], unit="s").dt.strftime("%H:%M:%S"))
+    print(track[["utc", "lat", "lon", "baroaltitude", "velocity", "heading"]].head(args.rows).round(4).to_string(index=False))
 
 
 if __name__ == "__main__":
