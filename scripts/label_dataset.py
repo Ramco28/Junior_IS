@@ -52,8 +52,8 @@ def main():
     print("\n=== Report level (one row per report) ===")
     counts = rows["label"].value_counts()
     for label in ["normal", "anomaly", "uncertain"]:
-        n = counts.get(label, 0)
-        print(f"{label:<10} {n:>10,}  {100 * n / len(rows):.3f}%")
+        count = counts.get(label, 0)
+        print(f"{label:<10} {count:>10,}  {100 * count / len(rows):.3f}%")
     print("\nAnomaly reports per split:")
     print(share_table(rows, "split", is_anomaly, "anomaly").to_string())
     print("\nAnomaly reports per aircraft class:")
@@ -64,8 +64,8 @@ def main():
         print(f"  {check:<16} {hit.sum():>6,} reports in {rows.loc[hit, 'trajectory_id'].nunique():>4,} trajectories")
 
     print("\n=== Trajectory level (one row per flight) ===")
-    n = len(trajectories)
-    print(f"trajectories        {n:>7,}")
+    flight_count = len(trajectories)
+    print(f"trajectories        {flight_count:>7,}")
     print(f"anomalous           {trajectories['anomalous'].sum():>7,}  {100 * trajectories['anomalous'].mean():.2f}%")
     print(f"  with flagged reports {(trajectories['flagged_rows'] > 0).sum():>4,}")
     for check in TRAJECTORY_LEVEL_CHECKS:

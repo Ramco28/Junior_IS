@@ -30,8 +30,8 @@ COLUMNS = ["trajectory_id", "time", "batch_time", "icao24", "callsign", "aircraf
            "alt_rate_mps", "accel_mps2", "turn_rate_dps"]
 
 
-def pct(x):
-    return "n/a" if pd.isna(x) else f"{100 * x:.1f}%"
+def pct(share):
+    return "n/a" if pd.isna(share) else f"{100 * share:.1f}%"
 
 
 def main():
@@ -62,12 +62,12 @@ def main():
     odd.to_csv(csv_path, index=False)
     flights.drop(columns=["checks"]).to_parquet(REPORT_DIR / "flights_test.parquet", index=False)
 
-    n = len(flights)
+    flight_count = len(flights)
     not_scored = flights[~flights["scored"]]
     route_only = flights[flights["route_only"]]
     print(f"Test days: {', '.join(settings['test_days'])}. Forest: {settings['n_estimators']} trees, "
           f"threshold {threshold:.4f}.")
-    print(f"Test flights: {n:,}. Scored by the forest: {int(flights['scored'].sum()):,}. "
+    print(f"Test flights: {flight_count:,}. Scored by the forest: {int(flights['scored'].sum()):,}. "
           f"Not scored (no usable report): {len(not_scored):,}, of which {int(not_scored['rules_anomalous'].sum())} "
           f"are rules anomalous. Not scored flights are left out of the comparison.")
     print("\nOnly the REPORT-level rule checks are compared (speed, position jump, climb rate, acceleration).")
@@ -106,7 +106,7 @@ def main():
     result = {
         "split": SPLIT, "test_days": settings["test_days"], "threshold": threshold,
         "n_estimators": settings["n_estimators"],
-        "flights": n, "scored": int(flights["scored"].sum()), "not_scored": len(not_scored),
+        "flights": flight_count, "scored": int(flights["scored"].sum()), "not_scored": len(not_scored),
         "not_scored_rules_anomalous": int(not_scored["rules_anomalous"].sum()),
         "trajectory_level_only": len(route_only),
         "trajectory_level_only_route_deviation": int(route_only["route_deviation"].sum()),
