@@ -31,6 +31,7 @@ def download(name: str):
 
 
 def main():
+    """Download the aircraft database once and save its slim Parquet copy."""
     AIRCRAFT_DIR.mkdir(parents=True, exist_ok=True)
     db_csv = download(AIRCRAFT_DB_CSV)
     types_csv = download(AIRCRAFT_TYPES_CSV)

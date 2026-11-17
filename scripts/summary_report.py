@@ -67,6 +67,7 @@ def score_figure(flights: pd.DataFrame, threshold: float, path_stem):
 
 
 def main():
+    """Collect the final numbers and write metrics.json, the LaTeX tables and the figure."""
     settings = json.loads((MODELS_DIR / "iforest_settings.json").read_text())
     comparison = json.loads((REPORT_DIR / "comparison.json").read_text())
     flights = pd.read_parquet(REPORT_DIR / "flights_test.parquet")

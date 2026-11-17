@@ -16,6 +16,7 @@ from adsb.live import fetch_states, states_to_frame
 
 
 def main():
+    """Log in, get one live snapshot, print a summary and save it if --save is given."""
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--ohio", action="store_true", help="limit to the Ohio bounding box")
     ap.add_argument("--save", action="store_true", help="also save the snapshot to data/snapshots/")

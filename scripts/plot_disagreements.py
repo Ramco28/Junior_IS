@@ -100,6 +100,7 @@ def plot_flight(flight: pd.Series, rows: pd.DataFrame, threshold: float, path):
 
 
 def main():
+    """Save one picture per disagreeing flight in data/report/disagreements/."""
     odd = pd.read_csv(REPORT_DIR / "disagreements.csv", dtype={"icao24": str})
     threshold = json.loads((MODELS_DIR / "iforest_settings.json").read_text())["threshold"]
     labeled = pd.read_parquet(LABELED_DIR / "labeled_rows.parquet", columns=COLUMNS,

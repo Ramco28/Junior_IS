@@ -23,6 +23,7 @@ FT_PER_M = 3.281     # feet in one meter
 
 
 def main():
+    """Run all rule-based checks on one feature file, save the flags and print a summary."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     source = ap.add_mutually_exclusive_group(required=True)
     source.add_argument("--historical", metavar="FEATURES", help="a features file saved by scripts/build_features.py")

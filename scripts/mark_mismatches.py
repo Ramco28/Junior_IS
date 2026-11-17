@@ -26,6 +26,7 @@ FT_PER_M = 3.281
 
 
 def main():
+    """Decide class mismatches over all historical hours and write them into every feature file."""
     files = sorted(FEATURES_DIR.glob("features_ohio_*.parquet"))
     if not files:
         raise SystemExit("No historical feature files. Run scripts/build_features.py first.")

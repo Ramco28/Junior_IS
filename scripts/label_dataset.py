@@ -27,6 +27,7 @@ def share_table(df: pd.DataFrame, by: str, positive: pd.Series, name: str) -> pd
 
 
 def main():
+    """Label every historical report and flight, split by day, and print the class balance."""
     files = sorted(FEATURES_DIR.glob("features_ohio_*.parquet"))
     if not files:
         raise SystemExit("No historical feature files. Run scripts/build_features.py first.")

@@ -29,6 +29,7 @@ from adsb.live import RateLimited, fetch_states
 
 
 def save(snap: dict):
+    """Save one snapshot as gzipped JSON in data/snapshots/ and return its path."""
     # the file name is the snapshot's UTC time, so sorting by name sorts by time
     stamp = datetime.fromtimestamp(snap["time"], timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     path = SNAPSHOT_DIR / f"states_{stamp}.json.gz"
@@ -38,6 +39,7 @@ def save(snap: dict):
 
 
 def main():
+    """Ask for a new snapshot on a schedule and save each one until stopped or --count is reached."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--interval", type=int, default=None,
                     help="seconds between requests (default 60, or 300 in anonymous mode)")

@@ -37,6 +37,7 @@ SAMPLE_S = 10  # one report every 10 s per aircraft, like scripts/historical.py
 
 
 def main():
+    """Download every missing one-hour window in DAYS x HOURS into data/historical/."""
     HISTORICAL_DIR.mkdir(parents=True, exist_ok=True)
     windows = [parse_utc(f"{day} {hour}") for day in DAYS for hour in HOURS]
     total_rows = 0

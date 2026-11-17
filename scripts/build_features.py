@@ -22,6 +22,7 @@ from adsb.rules import mark_artifacts, mark_class_mismatches
 
 
 def main():
+    """Normalize one source, add aircraft class and features, and save the feature file."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     # exactly one of the two sources must be given
     source = ap.add_mutually_exclusive_group(required=True)

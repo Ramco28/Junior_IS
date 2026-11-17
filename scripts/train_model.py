@@ -33,6 +33,7 @@ SPLITS = ["train", "validation", "test"]
 
 
 def main():
+    """Train the forests, pick tree count and threshold on validation, and score every day."""
     labeled = pd.read_parquet(LABELED_DIR / "labeled_rows.parquet", columns=COLUMNS)
     trajectories = pd.read_parquet(LABELED_DIR / "labeled_trajectories.parquet")
     rows, missing = model_rows(labeled)

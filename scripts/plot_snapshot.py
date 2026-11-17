@@ -16,6 +16,7 @@ from adsb.live import states_to_frame
 
 
 def main():
+    """Plot the airborne aircraft of one saved snapshot, colored by altitude."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--file", help="snapshot file (default: newest in data/snapshots/)")
     args = ap.parse_args()

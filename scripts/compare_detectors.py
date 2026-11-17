@@ -31,10 +31,12 @@ COLUMNS = ["trajectory_id", "time", "batch_time", "icao24", "callsign", "aircraf
 
 
 def pct(share):
+    """A share as a percentage with one decimal, or n/a when it is missing."""
     return "n/a" if pd.isna(share) else f"{100 * share:.1f}%"
 
 
 def main():
+    """Compare the forest with the rules per flight on the test days and save the results."""
     csv_path = REPORT_DIR / "disagreements.csv"
     if has_manual_work(csv_path):
         raise SystemExit(f"STOPPED: {csv_path} already has my_verdict or my_note filled in. "

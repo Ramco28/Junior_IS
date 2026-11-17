@@ -16,6 +16,7 @@ from adsb.historical import fetch_state_vectors, parse_utc, split_trajectories
 
 
 def main():
+    """Query one time window over Ohio, split it into trajectories and save it as Parquet."""
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--start", required=True, help='UTC start, e.g. "2026-09-20 14:00"')
     ap.add_argument("--hours", type=float, default=1.0, help="length of the window (default 1)")

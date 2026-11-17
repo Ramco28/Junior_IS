@@ -13,6 +13,7 @@ from adsb.config import HISTORICAL_DIR
 
 
 def main():
+    """Print the first reports of one saved trajectory in time order."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--file", help="parquet file (default: newest in data/historical/)")
     ap.add_argument("--id", help="trajectory_id to show (default: the longest airborne one)")
