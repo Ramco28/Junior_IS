@@ -11,7 +11,6 @@ expert knowledge (no aircraft class, no thresholds). The one thing it takes
 from my rules is HOW MANY flights to flag (see budget_threshold), never WHICH
 flights, so the comparison in feature 9 stays fair.
 """
-import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
