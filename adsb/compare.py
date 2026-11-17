@@ -60,7 +60,8 @@ def flight_table(trajectories: pd.DataFrame, scores: pd.DataFrame, threshold: fl
 
     per_flight = scores.groupby("trajectory_id")["score"].agg(["max", "size"])
     flights["max_score"] = flights["trajectory_id"].map(per_flight["max"])
-    flights["scorable_reports"] = flights["trajectory_id"].map(per_flight["size"]).fillna(0).astype(int)
+    report_counts = flights["trajectory_id"].map(per_flight["size"])
+    flights["scorable_reports"] = report_counts.fillna(0).astype(int)
     flights["scored"] = flights["scorable_reports"] > 0
     flights["score_rank"] = flights["max_score"].rank(ascending=False, method="min").astype("Int64")
     flights["forest_flagged"] = (flights["max_score"] >= threshold).astype("boolean")
@@ -71,8 +72,10 @@ def flight_table(trajectories: pd.DataFrame, scores: pd.DataFrame, threshold: fl
 def confusion(flights: pd.DataFrame) -> pd.DataFrame:
     """The 2x2 table of SCORED flights: rules (rows) against forest (columns)."""
     scored = flights[flights["scored"]]
-    table = pd.crosstab(scored["rules_anomalous"].map({True: "rules anomalous", False: "rules normal"}),
-                        scored["forest_flagged"].astype(bool).map({True: "forest flagged", False: "forest not flagged"}))
+    rules_side = scored["rules_anomalous"].map({True: "rules anomalous", False: "rules normal"})
+    forest_side = scored["forest_flagged"].astype(bool).map(
+        {True: "forest flagged", False: "forest not flagged"})
+    table = pd.crosstab(rules_side, forest_side)
     return table.reindex(index=["rules anomalous", "rules normal"],
                          columns=["forest flagged", "forest not flagged"], fill_value=0)
 
@@ -111,7 +114,8 @@ def per_class(flights: pd.DataFrame) -> pd.DataFrame:
         rows[cls] = result
     table = pd.DataFrame(rows).T
     counts = ["both", "rules_only", "forest_only", "neither", "scored_flights", "not_scored"]
-    return table.astype({c: int for c in counts} | {c: float for c in ["precision", "recall", "rule_normal_flagged"]})
+    shares = ["precision", "recall", "rule_normal_flagged"]
+    return table.astype({c: int for c in counts} | {c: float for c in shares})
 
 
 def by_length(flights: pd.DataFrame, groups: int = N_LENGTH_GROUPS) -> pd.DataFrame:
@@ -161,7 +165,8 @@ def disagreements(flights: pd.DataFrame, rows: pd.DataFrame) -> pd.DataFrame:
         .dt.strftime("%Y-%m-%d %H:%M:%S")
     odd["my_verdict"] = ""
     odd["my_note"] = ""
-    return odd.sort_values(["flagged_by", "score_rank"])[DISAGREEMENT_COLUMNS].reset_index(drop=True)
+    odd = odd.sort_values(["flagged_by", "score_rank"])
+    return odd[DISAGREEMENT_COLUMNS].reset_index(drop=True)
 
 
 def has_manual_work(path) -> bool:

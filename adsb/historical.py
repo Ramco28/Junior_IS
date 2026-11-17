@@ -77,9 +77,11 @@ def split_trajectories(df: pd.DataFrame, max_gap_s: int = 900) -> pd.DataFrame:
         return df.assign(trajectory_id=pd.Series(dtype=str))
     df = df.sort_values(["icao24", "time"]).reset_index(drop=True)
     df["callsign"] = df["callsign"].fillna("").str.strip()
-    gap = df.groupby("icao24")["time"].diff()  # seconds since this aircraft's last report (NaN for its first)
+    # seconds since this aircraft's last report (NaN for its first)
+    gap = df.groupby("icao24")["time"].diff()
     new_segment = gap.isna() | (gap > max_gap_s)  # True where a new flight starts
-    seg_num = new_segment.astype(int).groupby(df["icao24"]).cumsum() - 1  # flight number per aircraft, from 0
+    # flight number per aircraft, from 0
+    seg_num = new_segment.astype(int).groupby(df["icao24"]).cumsum() - 1
     df["trajectory_id"] = df["icao24"] + "_" + seg_num.astype(str)
     return df
 

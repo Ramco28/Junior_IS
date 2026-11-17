@@ -1,7 +1,8 @@
 """Rule-based anomaly checks on the feature table (feature 6).
 
 Four kinds of checks, each a function that returns a table of flags:
-  speed              check_speed            (speed_reported, speed_implied, speed_mismatch, position_jump)
+  speed              check_speed            (speed_reported, speed_implied, speed_mismatch,
+                                             position_jump)
   duplicate ICAO     check_duplicate_icao   (duplicate_icao)
   altitude or speed  check_changes          (climb_rate, acceleration)
   change
@@ -110,8 +111,9 @@ THRESHOLDS = {
 UNTRUSTED_CLASS_SOURCES = ["callsign", "mismatch"]
 
 # Limits that are the same for every aircraft.
-CHECK_DT_RANGE_S = (5, 60)        # speed and change checks only use reports 5 to 60 s apart:
-                                  # shorter gaps suffer from 1 s time rounding, longer ones hide turns
+# Speed and change checks only use reports 5 to 60 s apart: shorter gaps
+# suffer from 1 s time rounding, longer ones hide turns.
+CHECK_DT_RANGE_S = (5, 60)
 # Between two reports I only know the straight line from one position to the
 # next. An aircraft that turns in between flies along a curve, and a curve is
 # always LONGER than the straight line between its ends. So in a turn the
@@ -121,21 +123,26 @@ CHECK_DT_RANGE_S = (5, 60)        # speed and change checks only use reports 5 t
 # by more than this many degrees, I ignore a negative speed mismatch (implied
 # below reported) but still check a positive one.
 TURN_GUARD_DEG = 45.0
-IMPOSSIBLE_SPEED_MPS = 1000.0     # 1,944 kt, about Mach 3: faster than any aircraft that carries ADS-B
-MIN_JUMP_M = 5_000.0              # 2.7 NM: a jump must be at least this far, so time rounding cannot cause it
+# 1,944 kt, about Mach 3: faster than any aircraft that carries ADS-B
+IMPOSSIBLE_SPEED_MPS = 1000.0
+# 2.7 NM: a jump must be at least this far, so time rounding cannot cause it
+MIN_JUMP_M = 5_000.0
 MIN_JUMPS_FOR_DUPLICATE = 3       # A, B, A, B is three jumps: away, back, and away again
 ROUTE_MIN_DURATION_S = 600        # a trajectory must last 10 minutes ...
-ROUTE_MIN_LENGTH_M = 50_000.0     # ... and cover 50 km (27 NM) start to end before I judge its route
+ROUTE_MIN_LENGTH_M = 50_000.0     # ... and cover 50 km (27 NM) start to end before I judge it
 
-ARTIFACT_MEDIAN_MPS = 20.0     # a batch is unreliable if its median speed mismatch is further from 0 than this (39 kt)
-ARTIFACT_DT_RANGE_S = (5, 60)  # only reports with a time gap in this range are used (works for 10 s and 30 s data)
+# A batch is unreliable if its median speed mismatch is further from 0 than this (39 kt).
+ARTIFACT_MEDIAN_MPS = 20.0
+# Only reports with a time gap in this range are used (works for 10 s and 30 s data).
+ARTIFACT_DT_RANGE_S = (5, 60)
 ARTIFACT_MIN_AIRCRAFT = 10     # a batch with fewer usable aircraft than this cannot be judged
 
 # Checks that compare a report with the one before it. Only these can be
 # caused by a bad batch (positions older than their timestamps), so only
 # their flags can be labeled as artifacts. A reported speed, a route or an
 # alternating track is not changed by a delivery that is a few seconds late.
-STEP_BASED_CHECKS = {"speed_implied", "speed_mismatch", "position_jump", "climb_rate", "acceleration"}
+STEP_BASED_CHECKS = {"speed_implied", "speed_mismatch", "position_jump", "climb_rate",
+                     "acceleration"}
 
 # The columns of a flags table. The ML detector will use the same ones.
 FLAG_COLUMNS = ["time", "batch_time", "icao24", "trajectory_id", "aircraft_class",
@@ -215,7 +222,8 @@ def _limit(df: pd.DataFrame, name: str, thresholds: dict) -> pd.Series:
     return cls.map({c: limits[name] for c, limits in thresholds.items()}).astype("float64")
 
 
-def _flags(df: pd.DataFrame, mask: pd.Series, check: str, value: pd.Series, threshold) -> pd.DataFrame:
+def _flags(df: pd.DataFrame, mask: pd.Series, check: str, value: pd.Series,
+           threshold) -> pd.DataFrame:
     """Build the flags table for the rows where mask is True."""
     out = df.loc[mask, ["time", "batch_time", "icao24", "trajectory_id", "aircraft_class"]].copy()
     out["detector"] = "rules"
@@ -326,11 +334,14 @@ def check_speed(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     heading_change = (df["turn_rate_dps"] * df["dt_s"]).abs()
     explained_by_turn = (heading_change > turn_guard_deg) & (df["speed_mismatch_mps"] < 0)
     return pd.concat([
-        _flags(df, normal & (df["velocity_mps"] > max_speed), "speed_reported", df["velocity_mps"], max_speed),
-        _flags(df, normal & (df["implied_speed_mps"] > max_speed), "speed_implied", df["implied_speed_mps"], max_speed),
-        _flags(df, normal & ~explained_by_turn & (df["speed_mismatch_mps"].abs() > max_mismatch), "speed_mismatch",
-               df["speed_mismatch_mps"], max_mismatch),
-        _flags(df, is_jump & ~alternating, "position_jump", df["implied_speed_mps"], IMPOSSIBLE_SPEED_MPS),
+        _flags(df, normal & (df["velocity_mps"] > max_speed),
+               "speed_reported", df["velocity_mps"], max_speed),
+        _flags(df, normal & (df["implied_speed_mps"] > max_speed),
+               "speed_implied", df["implied_speed_mps"], max_speed),
+        _flags(df, normal & ~explained_by_turn & (df["speed_mismatch_mps"].abs() > max_mismatch),
+               "speed_mismatch", df["speed_mismatch_mps"], max_mismatch),
+        _flags(df, is_jump & ~alternating,
+               "position_jump", df["implied_speed_mps"], IMPOSSIBLE_SPEED_MPS),
     ], ignore_index=True)
 
 
@@ -346,7 +357,8 @@ def check_duplicate_icao(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = _prepare(df)
     is_jump, alternating = _find_jumps(df)
-    return _flags(df, is_jump & alternating, "duplicate_icao", df["implied_speed_mps"], IMPOSSIBLE_SPEED_MPS)
+    return _flags(df, is_jump & alternating,
+                  "duplicate_icao", df["implied_speed_mps"], IMPOSSIBLE_SPEED_MPS)
 
 
 def check_changes(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
@@ -368,8 +380,10 @@ def check_changes(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     max_alt_rate = _limit(df, "max_alt_rate_mps", thresholds)
     max_accel = _limit(df, "max_accel_mps2", thresholds)
     return pd.concat([
-        _flags(df, normal & (df["alt_rate_mps"].abs() > max_alt_rate), "climb_rate", df["alt_rate_mps"], max_alt_rate),
-        _flags(df, normal & (df["accel_mps2"].abs() > max_accel), "acceleration", df["accel_mps2"], max_accel),
+        _flags(df, normal & (df["alt_rate_mps"].abs() > max_alt_rate),
+               "climb_rate", df["alt_rate_mps"], max_alt_rate),
+        _flags(df, normal & (df["accel_mps2"].abs() > max_accel),
+               "acceleration", df["accel_mps2"], max_accel),
     ], ignore_index=True)
 
 
@@ -408,7 +422,8 @@ def check_route_deviation(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     # the lowest altitude of the trajectory must be above the class minimum
     # (6,000 m for jets, 0 = no condition for the other classes)
     min_altitude = _limit(df, "route_min_altitude_m", thresholds)
-    high_enough = (min_altitude == 0) | (by_trajectory["baro_altitude_m"].transform("min") >= min_altitude)
+    lowest_altitude = by_trajectory["baro_altitude_m"].transform("min")
+    high_enough = (min_altitude == 0) | (lowest_altitude >= min_altitude)
     judged = ((t1 - t0 >= min_duration_s)
               & (haversine_m(lat0, lon0, lat1, lon1) >= min_length_m)
               & high_enough
@@ -418,8 +433,10 @@ def check_route_deviation(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     # angular_distance is the distance start -> point as an angle, and the two
     # bearings tell me how far off the line's direction the point lies.
     angular_distance = haversine_m(lat0, lon0, df["lat"], df["lon"]) / EARTH_RADIUS_M
-    off_direction = _bearing_rad(lat0, lon0, df["lat"], df["lon"]) - _bearing_rad(lat0, lon0, lat1, lon1)
-    deviation_m = np.abs(np.arcsin(np.sin(angular_distance) * np.sin(off_direction))) * EARTH_RADIUS_M
+    off_direction = (_bearing_rad(lat0, lon0, df["lat"], df["lon"])
+                     - _bearing_rad(lat0, lon0, lat1, lon1))
+    cross_track = np.arcsin(np.sin(angular_distance) * np.sin(off_direction))
+    deviation_m = np.abs(cross_track) * EARTH_RADIUS_M
 
     limit = _limit(df, "max_route_deviation_m", thresholds)
     return _flags(df, judged & (deviation_m > limit), "route_deviation", deviation_m, limit)
@@ -476,7 +493,8 @@ def find_class_mismatches(df: pd.DataFrame, thresholds: dict = THRESHOLDS) -> pd
     registered one), reason, median_speed_mps, max_speed_mps, high_altitude_m
     (the 95th percentile), max_altitude_m, median_altitude_m, reports.
     """
-    summary = _aircraft_summary(df[df["aircraft_class_source"].isin(["database", "mismatch"])], thresholds)
+    from_database = df["aircraft_class_source"].isin(["database", "mismatch"])
+    summary = _aircraft_summary(df[from_database], thresholds)
     return summary[summary["reason"] != ""].reset_index(drop=True)
 
 
@@ -507,7 +525,8 @@ def _aircraft_summary(rows: pd.DataFrame, thresholds: dict) -> pd.DataFrame:
     # When no aircraft is left (for example a table with only callsign guesses),
     # the columns above come out empty and without a number type, and newer
     # pandas refuses to compare them. Forcing them to numbers keeps it working.
-    numbers = ["median_speed_mps", "median_altitude_m", "high_altitude_m", "max_speed_mps", "max_altitude_m"]
+    numbers = ["median_speed_mps", "median_altitude_m", "high_altitude_m",
+               "max_speed_mps", "max_altitude_m"]
     per_aircraft[numbers] = per_aircraft[numbers].astype("float64")
     too_fast = per_aircraft["median_speed_mps"] > per_aircraft["max_speed_mps"]
     too_high = per_aircraft["high_altitude_m"] > per_aircraft["max_altitude_m"]

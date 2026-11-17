@@ -82,7 +82,8 @@ def model_rows(df: pd.DataFrame):
     return rows, missing
 
 
-def train_forest(rows: pd.DataFrame, n_estimators: int, random_state: int = RANDOM_STATE) -> IsolationForest:
+def train_forest(rows: pd.DataFrame, n_estimators: int,
+                 random_state: int = RANDOM_STATE) -> IsolationForest:
     """Fit an isolation forest on TRAINING reports only.
 
     I check this here and not only in the script: if a validation or test day
@@ -154,7 +155,8 @@ def choose_n_estimators(flagged_by_n: dict, min_overlap: float = STABILITY_MIN_O
     budget threshold. Returns (chosen count, {(n, next n): overlap}).
     """
     counts = sorted(flagged_by_n)
-    overlaps = {(n, m): overlap(flagged_by_n[n], flagged_by_n[m]) for n, m in zip(counts, counts[1:])}
+    overlaps = {(n, m): overlap(flagged_by_n[n], flagged_by_n[m])
+                for n, m in zip(counts, counts[1:])}
     for (n, _), share in overlaps.items():
         if share >= min_overlap:
             return n, overlaps

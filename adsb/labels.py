@@ -106,7 +106,8 @@ def label_window(features: pd.DataFrame, flags: pd.DataFrame, window: str) -> pd
     return df
 
 
-def add_split(df: pd.DataFrame, validation_days=VALIDATION_DAYS, test_days=TEST_DAYS) -> pd.DataFrame:
+def add_split(df: pd.DataFrame, validation_days=VALIDATION_DAYS,
+              test_days=TEST_DAYS) -> pd.DataFrame:
     """Add a split column: "train", "validation" or "test", decided by the DAY.
 
     I hold out whole days and never random rows. Two reports of the same
@@ -164,5 +165,6 @@ def label_trajectories(rows: pd.DataFrame) -> pd.DataFrame:
         lambda texts: ",".join(sorted(set(",".join(texts).split(",")))))
     # a trajectory with no flag gets "" (looked up one by one, so the column
     # stays text even when no trajectory at all was flagged)
-    out["checks"] = out["trajectory_id"].map(lambda trajectory_id: all_checks.get(trajectory_id, ""))
+    out["checks"] = out["trajectory_id"].map(
+        lambda trajectory_id: all_checks.get(trajectory_id, ""))
     return out

@@ -39,7 +39,8 @@ def fetch_states(auth, bbox=None) -> dict:
         raise RateLimitedError(retry)
     resp.raise_for_status()
     data = resp.json()
-    data["states"] = data.get("states") or []  # OpenSky sends null instead of [] when there are no aircraft
+    # OpenSky sends null instead of [] when there are no aircraft
+    data["states"] = data.get("states") or []
     data["fetched_at"] = time.time()
     remaining = resp.headers.get("X-Rate-Limit-Remaining")  # credits I have left today
     if remaining is not None:
