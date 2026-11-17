@@ -54,8 +54,9 @@ def add_repeated(df: pd.DataFrame) -> pd.DataFrame:
     previous report, so it is never "repeated".
     """
     df = df.sort_values(["trajectory_id", "time"]).reset_index(drop=True)
-    g = df.groupby("trajectory_id")
-    same = (df["velocity_mps"] == g["velocity_mps"].shift()) & (df["heading_deg"] == g["heading_deg"].shift())
+    by_trajectory = df.groupby("trajectory_id")
+    same = ((df["velocity_mps"] == by_trajectory["velocity_mps"].shift())
+            & (df["heading_deg"] == by_trajectory["heading_deg"].shift()))
     return df.assign(repeated=same.astype(int))
 
 
