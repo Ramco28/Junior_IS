@@ -271,9 +271,9 @@ def _find_jumps(df: pd.DataFrame):
     # those I check that each side, taken on its own, is a track an aircraft
     # could really fly (no impossible step from one side-A point to the next).
     cand = df[n_jumps >= MIN_JUMPS_FOR_DUPLICATE].assign(side=side)
-    g = cand.groupby(["trajectory_id", "side"])
-    step_m = haversine_m(g["lat"].shift(), g["lon"].shift(), cand["lat"], cand["lon"])
-    step_s = g["time"].diff()
+    by_side = cand.groupby(["trajectory_id", "side"])
+    step_m = haversine_m(by_side["lat"].shift(), by_side["lon"].shift(), cand["lat"], cand["lon"])
+    step_s = by_side["time"].diff()
     step_speed = step_m / step_s.where(step_s > 0)
     broken = (step_speed > IMPOSSIBLE_SPEED_MPS) & (step_m > MIN_JUMP_M)
     not_two_tracks = set(cand.loc[broken, "trajectory_id"])
@@ -284,10 +284,10 @@ def _find_jumps(df: pd.DataFrame):
 
 def _bearing_rad(lat1, lon1, lat2, lon2):
     """Direction from point 1 to point 2 in radians (0 = north, clockwise)."""
-    lat1, lon1, lat2, lon2 = (np.radians(x) for x in (lat1, lon1, lat2, lon2))
-    y = np.sin(lon2 - lon1) * np.cos(lat2)
-    x = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(lon2 - lon1)
-    return np.arctan2(y, x)
+    lat1, lon1, lat2, lon2 = (np.radians(angle) for angle in (lat1, lon1, lat2, lon2))
+    bearing_y = np.sin(lon2 - lon1) * np.cos(lat2)
+    bearing_x = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(lon2 - lon1)
+    return np.arctan2(bearing_y, bearing_x)
 
 
 # ---------------------------------------------------------------------------
@@ -395,26 +395,30 @@ def check_route_deviation(df: pd.DataFrame, thresholds: dict = THRESHOLDS,
     """
     df = _prepare(df)
     is_jump, _ = _find_jumps(df)
-    g = df.groupby("trajectory_id")
+    by_trajectory = df.groupby("trajectory_id")
     # first and last point of each trajectory, repeated on every one of its rows
-    lat0, lon0, t0 = g["lat"].transform("first"), g["lon"].transform("first"), g["time"].transform("first")
-    lat1, lon1, t1 = g["lat"].transform("last"), g["lon"].transform("last"), g["time"].transform("last")
+    lat0 = by_trajectory["lat"].transform("first")
+    lon0 = by_trajectory["lon"].transform("first")
+    t0 = by_trajectory["time"].transform("first")
+    lat1 = by_trajectory["lat"].transform("last")
+    lon1 = by_trajectory["lon"].transform("last")
+    t1 = by_trajectory["time"].transform("last")
     has_jump = is_jump.groupby(df["trajectory_id"]).transform("any")
     # the lowest altitude of the trajectory must be above the class minimum
     # (6,000 m for jets, 0 = no condition for the other classes)
     min_altitude = _limit(df, "route_min_altitude_m", thresholds)
-    high_enough = (min_altitude == 0) | (g["baro_altitude_m"].transform("min") >= min_altitude)
+    high_enough = (min_altitude == 0) | (by_trajectory["baro_altitude_m"].transform("min") >= min_altitude)
     judged = ((t1 - t0 >= min_duration_s)
               & (haversine_m(lat0, lon0, lat1, lon1) >= min_length_m)
               & high_enough
               & ~has_jump)
 
     # Cross-track distance: how far a point is from the line start -> end.
-    # d is the distance start -> point as an angle, and the two bearings tell
-    # me how far off the line's direction the point lies.
-    d = haversine_m(lat0, lon0, df["lat"], df["lon"]) / EARTH_RADIUS_M
+    # angular_distance is the distance start -> point as an angle, and the two
+    # bearings tell me how far off the line's direction the point lies.
+    angular_distance = haversine_m(lat0, lon0, df["lat"], df["lon"]) / EARTH_RADIUS_M
     off_direction = _bearing_rad(lat0, lon0, df["lat"], df["lon"]) - _bearing_rad(lat0, lon0, lat1, lon1)
-    deviation_m = np.abs(np.arcsin(np.sin(d) * np.sin(off_direction))) * EARTH_RADIUS_M
+    deviation_m = np.abs(np.arcsin(np.sin(angular_distance) * np.sin(off_direction))) * EARTH_RADIUS_M
 
     limit = _limit(df, "max_route_deviation_m", thresholds)
     return _flags(df, judged & (deviation_m > limit), "route_deviation", deviation_m, limit)
