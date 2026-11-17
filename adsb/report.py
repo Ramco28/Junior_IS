@@ -53,6 +53,6 @@ def latex_table(header: list, rows: list, align: str = None) -> str:
     return "\n".join(lines) + "\n"
 
 
-def pct(x, digits: int = 1) -> str:
+def pct(share, digits: int = 1) -> str:
     """A share as a percentage for a table, or n/a when it could not be computed."""
-    return "n/a" if pd.isna(x) else f"{100 * x:.{digits}f}%"
+    return "n/a" if pd.isna(share) else f"{100 * share:.{digits}f}%"

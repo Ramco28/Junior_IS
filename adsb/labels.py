@@ -164,5 +164,5 @@ def label_trajectories(rows: pd.DataFrame) -> pd.DataFrame:
         lambda texts: ",".join(sorted(set(",".join(texts).split(",")))))
     # a trajectory with no flag gets "" (looked up one by one, so the column
     # stays text even when no trajectory at all was flagged)
-    out["checks"] = out["trajectory_id"].map(lambda t: all_checks.get(t, ""))
+    out["checks"] = out["trajectory_id"].map(lambda trajectory_id: all_checks.get(trajectory_id, ""))
     return out

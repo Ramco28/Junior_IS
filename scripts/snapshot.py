@@ -46,8 +46,8 @@ def main():
         SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
         stamp = datetime.fromtimestamp(snap["time"], timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         path = SNAPSHOT_DIR / f"states_{stamp}.json.gz"
-        with gzip.open(path, "wt") as f:
-            json.dump(snap, f)
+        with gzip.open(path, "wt") as file:
+            json.dump(snap, file)
         print(f"\nSaved {path}")
 
 

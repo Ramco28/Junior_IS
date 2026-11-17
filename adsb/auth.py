@@ -91,7 +91,7 @@ def get_auth(path: Path = CREDENTIALS_FILE):
         return tm
     except (FileNotFoundError, ValueError):
         reason = "credentials.json is missing or incomplete"
-    except requests.HTTPError as e:
-        reason = f"OpenSky rejected my credentials (HTTP {e.response.status_code})"
+    except requests.HTTPError as error:
+        reason = f"OpenSky rejected my credentials (HTTP {error.response.status_code})"
     print(f"Warning: {reason}, using anonymous access (400 credits per day).")
     return AnonymousAccess()

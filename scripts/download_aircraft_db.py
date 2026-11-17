@@ -24,9 +24,9 @@ def download(name: str):
     # stream=True reads the file piece by piece, so 110 MB never sits in memory at once
     with requests.get(f"{METADATA_URL}/{name}", stream=True, timeout=60) as resp:
         resp.raise_for_status()
-        with open(path, "wb") as f:
+        with open(path, "wb") as file:
             for chunk in resp.iter_content(chunk_size=1_000_000):
-                f.write(chunk)
+                file.write(chunk)
     return path
 
 

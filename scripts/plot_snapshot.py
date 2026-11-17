@@ -24,8 +24,8 @@ def main():
     if not args.file and not files:
         raise SystemExit("No snapshots yet. Run scripts/snapshot.py --ohio --save first.")
     path = args.file or max(files)  # the names are UTC times, so the biggest name is the newest
-    with gzip.open(path, "rt") as f:
-        snap = json.load(f)
+    with gzip.open(path, "rt") as file:
+        snap = json.load(file)
     # keep only aircraft that have a position and are in the air
     df = states_to_frame(snap).dropna(subset=["latitude", "longitude"])
     df = df[~df["on_ground"].astype(bool)]

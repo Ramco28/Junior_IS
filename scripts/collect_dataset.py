@@ -50,8 +50,8 @@ def main():
             continue
         try:
             df = fetch_state_vectors(start, start + timedelta(hours=1), OHIO_BBOX, SAMPLE_S)
-        except Exception as e:  # one failed query should not stop the others
-            print(f"{label}: FAILED ({e})")
+        except Exception as error:  # one failed query should not stop the others
+            print(f"{label}: FAILED ({error})")
             failed.append(start)
             continue
         df = split_trajectories(df)

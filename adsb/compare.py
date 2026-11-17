@@ -90,8 +90,8 @@ def agreement(table: pd.DataFrame) -> dict:
     forest_only = table.loc["rules normal", "forest flagged"]
     neither = table.loc["rules normal", "forest not flagged"]
 
-    def share(a, b):
-        return a / b if b else np.nan
+    def share(part, whole):
+        return part / whole if whole else np.nan
 
     return {"both": int(both), "rules_only": int(rules_only), "forest_only": int(forest_only),
             "neither": int(neither),
@@ -129,7 +129,7 @@ def by_length(flights: pd.DataFrame, groups: int = N_LENGTH_GROUPS) -> pd.DataFr
         min_reports=("scorable_reports", "min"),
         max_reports=("scorable_reports", "max"),
         rules_flagged=("rules_anomalous", "mean"),
-        forest_flagged=("forest_flagged", lambda f: f.astype(bool).mean()),
+        forest_flagged=("forest_flagged", lambda flagged: flagged.astype(bool).mean()),
     )
     table.index = [f"Q{i}" for i in range(1, len(table) + 1)]
     return table

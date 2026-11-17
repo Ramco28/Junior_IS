@@ -32,8 +32,8 @@ def save(snap: dict):
     # the file name is the snapshot's UTC time, so sorting by name sorts by time
     stamp = datetime.fromtimestamp(snap["time"], timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     path = SNAPSHOT_DIR / f"states_{stamp}.json.gz"
-    with gzip.open(path, "wt") as f:
-        json.dump(snap, f)
+    with gzip.open(path, "wt") as file:
+        json.dump(snap, file)
     return path
 
 
@@ -71,14 +71,14 @@ def main():
                     saved += 1
                     credits = snap.get("credits_remaining", "?")
                     print(f"  [{saved}] {len(snap['states']):>6,} aircraft -> {path.name}  (credits left: {credits})")
-            except RateLimited as e:
+            except RateLimited as error:
                 # out of credits: wait as long as OpenSky says, then try again
-                print(f"  out of credits, sleeping {e.retry_after_s} s")
-                time.sleep(e.retry_after_s)
+                print(f"  out of credits, sleeping {error.retry_after_s} s")
+                time.sleep(error.retry_after_s)
                 continue
-            except requests.RequestException as e:
+            except requests.RequestException as error:
                 # a network error should not stop the whole poller
-                print(f"  request failed ({e}); will retry next cycle")
+                print(f"  request failed ({error}); will retry next cycle")
             if args.count and saved >= args.count:
                 break  # I have all the snapshots I asked for, no need to wait again
             # sleep what is left of the interval so requests stay evenly spaced

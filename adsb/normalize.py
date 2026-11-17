@@ -126,8 +126,8 @@ def load_snapshots(folder=SNAPSHOT_DIR) -> pd.DataFrame:
     frames = []
     # the file names are UTC times, so sorted() gives them in time order
     for path in sorted(folder.glob("states_*.json.gz")):
-        with gzip.open(path, "rt") as f:
-            frames.append(_live_frame(json.load(f)))
+        with gzip.open(path, "rt") as file:
+            frames.append(_live_frame(json.load(file)))
     if not frames:
         return normalize_live({"time": 0, "states": []})  # empty table, right columns
     # stack the snapshots on top of each other, oldest first, then clean once
